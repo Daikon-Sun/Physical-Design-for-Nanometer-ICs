@@ -1,0 +1,23 @@
+# compiled stuff
+example-data-1d
+example-data-2d
+example-interactive
+example-misc
+test-noncopyable
+test-outputs
+test-empty
+*.error.txt
+*.o
+# Windows compiled stuff
+*.exe
+*.obj
+
+# cmake stuff
+build
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# output of example scripts and unit tests
+my_graph_*.png
+unittest-output/
