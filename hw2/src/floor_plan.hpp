@@ -50,36 +50,6 @@ public:
   }
   void init() {
     _tree.init(_blcks);
-    //ID p = _tree.rood_id(), cnt = 1;
-    //list<ID> cy(1, p);
-    //auto cur = cy.begin();
-    //NODE<ID> *p = _tree.root(), *pre;
-
-    //_blcks[p->_id]._x = _blcks[p->_id]._y = 0; 
-
-    //vector<uchar> vis(_Nblcks+1);
-    //++vis[p->id];
-
-    //while(cnt < _Nblcks) {
-    //  pre = p;
-    //  if(!_tree[p*2] || vis[_tree[p]]>2 || (!_tree[p*2+1] && vis[_tree[p]]>1)) {
-    //    if(p%2 == 0) --cur;
-    //    p /= 2;
-    //  } else if(vis[_tree[p]] == 2) {
-    //    p = p*2+1;
-    //    _blcks[_tree[p]]._pos = p;
-    //    _blcks[_tree[p]]._x = _blcks[_tree[pre]]._x;
-    //    _blcks[_tree[p]]._y = find_max_y(cy, cur, _blcks[_tree[p]]);
-    //    ++cnt;
-    //  } else {
-    //    p *= 2;
-    //    _blcks[_tree[p]]._pos = p;
-    //    _blcks[_tree[p]]._x = _blcks[_tree[pre]]._x + _blcks[_tree[pre]]._w;
-    //    _blcks[_tree[p]]._y = find_max_y(cy, ++cur, _blcks[_tree[p]]);
-    //    ++cnt;
-    //  }
-    //  ++vis[_tree[p]];
-    //}
   }
   tuple<int, int, int> cost() {
     int hpwl = 0;
@@ -102,13 +72,12 @@ public:
       }
       hpwl += ((max_x-min_x) + (max_y-min_y));
     }
-    cerr << "hpwl = " << (int)hpwl << endl;
-    cerr << "area = " << (int)MAX_X*MAX_Y << endl;
-    cerr << "cost = " << _alpha*MAX_X*MAX_Y + (1-_alpha)*hpwl << endl;
+    //cerr << "hpwl = " << (int)hpwl << endl;
+    //cerr << "area = " << (int)MAX_X*MAX_Y << endl;
+    //cerr << "cost = " << _alpha*MAX_X*MAX_Y + (1-_alpha)*hpwl << endl;
     return {hpwl, MAX_X, MAX_Y};
   }
   void plot() {
-    getchar();
     Gnuplot gp;
     gp << "set xrange [0:" << _W*2 << "]\nset yrange [0:" << _H*2 << "]" << endl;
     for(uint i = 1; i<=_Nblcks; ++i) {
@@ -119,6 +88,7 @@ public:
       gp << "set label \"" << int(blck._id) << "\" at " << int(blck._x+blck._w/2)
          << "," << int(blck._y+blck._h/2) << endl;
     }
+    gp << "set nokey" << endl;
     gp << "set size ratio -1" << endl;
     gp << "plot '-' w p ls 1" << endl;
     gp << "0 0" << endl;
@@ -139,14 +109,22 @@ public:
   }
   void rotate() {
     ID id = (rand()%_Nblcks)+1;
+    _blcks[id]._rot = !_blcks[id]._rot;
+    swap(_blcks[id]._w, _blcks[id]._h);
+    _tree.rotate(id);
     cerr << "rotating block: " << id << endl;
-    BLOCK& blck = _blcks[id];
-    swap(blck._w, blck._h);
   }
   void del_and_ins() {
     ID id = (rand()%_Nblcks)+1;
     bool left = rand()%2;
     //del_from_tree(id, left);
+  }
+  void swap_two_nodes() {
+    ID id1 = rand()%_Nblcks;
+    ID id2 = (id1+((rand()%(_Nblcks-1))+1))%_Nblcks;
+    cerr << "swap " << int(id1+1) << " " << int(id2+1) << endl;
+    assert(id1 != id2);
+    _tree.swap_two_nodes(id1+1, id2+1);
   }
 private:
   void read_in(vector<BLOCK>& vec, ifstream& ifs, map<string, ID>& m,
@@ -160,20 +138,6 @@ private:
       else vec.emplace_back(i, 0, 0, "", w, h);
     }
   }
-  //void del_from_tree(ID id, bool left) {
-  //  BLOCK& blck = _blcks[id];
-  //  int p = blck._pos;
-  //  blck._pos = 0;
-  //  if(!_tree[p*2] && !_tree[p*2+1]) {
-  //    _tree[p] = 0;
-  //  } else if(!_tree[p*2] && _tree[p*2+1]) {
-  //    _tree[p] = _tree[p*2+1];
-  //  } else if(_tree[p*2] && !_tree[p*2+1]) {
-  //    _tree[p] = _tree[p*2];
-  //  } else {
-  //    _tree[p] = (left ? _tree[p*2] : _tree[p*2+1]);
-  //  }
-  //}
   double _alpha;
   uint _W, _H, _Nblcks, _Ntrmns, _Nnets;
   string _out_rpt;
@@ -191,28 +155,42 @@ public:
     _nodes.resize(Nblcks+1);
     for(ID i = 1; i<=Nblcks; ++i) {
       ID& id = _tree[i];
-      _nodes[id]._id = i;
-      _nodes[id]._par = _tree[id/2];
+      _nodes[id]._id = id;
+      _nodes[id]._par = _tree[i/2];
       if(i*2 <= Nblcks) _nodes[id]._l = _tree[i*2];
       if(i*2+1 <= Nblcks) _nodes[id]._r = _tree[i*2+1];
     }
     _nodes[0]._par = _tree[1];
   };
-  //NODE* root() { return &_nodes[root_id()]; }
-  //ID root_id() { return _nodes[0]._par; }
   void init(vector<BLOCK>& blcks) {
     const ID& root_id = _nodes[0]._par;
+    blcks[root_id]._x = blcks[root_id]._y = 0;
     list<ID> cy(1, root_id);
     auto cur = cy.begin();
     dfs(root_id, 0, cy, cur, blcks);
   }
-  //const NODE& root() { return _blcks[ root_id() ]; }
-  //const NODE& operator [] (ID i) { return _blcks[i]; }
+  bool rot(ID id) { return _nodes[id]._rot; }
+  void rotate(ID id) {
+    _nodes[id]._rot = !_nodes[id]._rot;
+  }
+  void swap_two_nodes(ID id1, ID id2) {
+    print();
+    if(_nodes[id1]._par == id2) swap_near(id2, id1);
+    else if(_nodes[id2]._par == id1) swap_near(id1, id2);
+    else swap_not_near(id1, id2);
+    print();
+  }
+  void print() {
+    ID rt = _nodes[0]._par;
+    cerr << "root " << int(rt) << endl;
+    for(uint i = 1; i<_nodes.size(); ++i) 
+      cerr << _nodes[i]._par << " " << _nodes[i]._l << " " 
+           << _nodes[i]._r << endl;
+  }
 private:
   void dfs(ID id, ID par, list<ID>& cy, auto& cur, vector<BLOCK>& blcks) {
     if(_nodes[id]._l) {
       const ID& p = _nodes[id]._l;
-      blcks[p]._id = p;
       blcks[p]._x = blcks[id]._x + blcks[id]._w;
       blcks[p]._y = find_max_y(cy, ++cur, blcks, blcks[p]);
       dfs(_nodes[id]._l, id, cy, cur, blcks);
@@ -220,7 +198,6 @@ private:
     }
     if(_nodes[id]._r) {
       const ID& p = _nodes[id]._r;
-      blcks[p]._id = p;
       blcks[p]._x = blcks[id]._x;
       blcks[p]._y = find_max_y(cy, cur, blcks, blcks[p]);
       dfs(_nodes[id]._r, id, cy, cur, blcks);
@@ -241,14 +218,63 @@ private:
     cur = l.insert(cur, blck._id);
     return y;
   }
+  void swap_not_near(ID id1, ID id2) {
+    if(_nodes[id1]._par == _nodes[id2]._par) {
+      swap(_nodes[_nodes[id1]._par]._l, _nodes[_nodes[id1]._par]._r);
+    } else {
+      if(id1 == _nodes[0]._par) _nodes[0]._par = id2;
+      else if(id2 == _nodes[0]._par) _nodes[0]._par = id1;
+      if(_nodes[_nodes[id1]._par]._l == id1) 
+        _nodes[_nodes[id1]._par]._l = id2;
+      else if(_nodes[_nodes[id1]._par]._r == id1) 
+        _nodes[_nodes[id1]._par]._r = id2;
+      if(_nodes[_nodes[id2]._par]._l == id2)
+        _nodes[_nodes[id2]._par]._l = id1;
+      else if(_nodes[_nodes[id2]._par]._r == id2) 
+        _nodes[_nodes[id2]._par]._r = id1;
+    }
+    if(_nodes[id1]._l) _nodes[_nodes[id1]._l]._par = id2;
+    if(_nodes[id2]._l) _nodes[_nodes[id2]._l]._par = id1;
+    if(_nodes[id1]._r) _nodes[_nodes[id1]._r]._par = id2;
+    if(_nodes[id2]._r) _nodes[_nodes[id2]._r]._par = id1;
+    swap(_nodes[id1]._par, _nodes[id2]._par);
+    swap(_nodes[id1]._l, _nodes[id2]._l);
+    swap(_nodes[id1]._r, _nodes[id2]._r);
+    swap(_nodes[id1]._rot, _nodes[id2]._rot);
+  }
+  void swap_near(ID par, ID id) {
+    if(par == _nodes[0]._par) _nodes[0]._par = id;
+    else if(par == _nodes[_nodes[par]._par]._l) _nodes[_nodes[par]._par]._l = id;
+    else if(par == _nodes[_nodes[par]._par]._r) _nodes[_nodes[par]._par]._r = id;
+    else assert(false);
+    if(_nodes[par]._l == id) {
+      _nodes[par]._l = _nodes[id]._l;
+      if(_nodes[id]._l) _nodes[_nodes[id]._l]._par = par;
+      _nodes[id]._l = par;
+      if(_nodes[id]._r) _nodes[_nodes[id]._r]._par = par;
+      if(_nodes[par]._r) _nodes[_nodes[par]._r]._par = id;
+      swap(_nodes[id]._r, _nodes[par]._r);
+    } else if(_nodes[par]._r == id) {
+      _nodes[par]._r = _nodes[id]._r;
+      if(_nodes[id]._r) _nodes[_nodes[id]._r]._par = par;
+      _nodes[id]._r = par;
+      if(_nodes[id]._l) _nodes[_nodes[id]._l]._par = par;
+      if(_nodes[par]._l) _nodes[_nodes[par]._l]._par = id;
+      swap(_nodes[id]._l, _nodes[par]._l);
+    } else assert(false);
+    _nodes[par]._par = id;
+    _nodes[id]._par = par;
+  }
   vector<NODE> _nodes;
 };
 template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::BLOCK {
-  BLOCK(ID id, LEN w, LEN h, const string& name, LEN x = 0, LEN y = 0)
-    : _id(id), _w(w), _h(h), _name(name), _x(x), _y(y) {};
+  BLOCK(ID id, LEN w, LEN h, const string& name, bool rot = false, 
+        LEN x = 0, LEN y = 0)
+    : _id(id), _w(w), _h(h), _name(name), _x(x), _y(y), _rot(rot) {};
   ID _id;
   LEN _w, _h, _x, _y;
   string _name;
+  bool _rot;
 };
 template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NET {
   NET(ID id) : _id(id) {};

@@ -21,16 +21,17 @@ int main(int argc, char** argv) {
   f_nets >> ign >> Nnets;
   f_blcks >> ign >> W >> H;
   f_blcks >> ign >> Nblcks;
-  bool do_plot = true;
-  auto fp = FLOOR_PLAN<ushort, uint>(f_nets, f_blcks, argv, Nnets, Nblcks, W, H);
+  bool do_plot = false;
+  auto fp =FLOOR_PLAN<ushort, uint>(f_nets, f_blcks, argv, Nnets, Nblcks, W, H);
   fp.init();
-  fp.plot();
-  for(int i = 0; i<10; ++i) {
-    fp.rotate();
-    fp.init();
-    fp.plot();
-  }
   if(do_plot) fp.plot();
+  for(int i = 0; i<1; ++i) {
+    fp.swap_two_nodes();
+    fp.init();
+    if(do_plot) fp.plot();
+  }
   fp.cost();
-  fp.output(cout);
+  ofstream outs(argv[4], ifstream::out);
+  fp.output(outs);
+  outs.close();
 }
