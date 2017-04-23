@@ -46,7 +46,6 @@ public:
     _avg_hpwl /= (_N+1);
     _avg_area /= (_N+1);
     _avg_r /= (_N+1);
-    cerr << "avg_r " << _avg_r << endl;
     _best_cost = sum_norm_cost(costs[0]);
     int cnt = 0;
     for(ID i = 1; i<=_N; ++i) {
@@ -60,9 +59,9 @@ public:
     uint iter = 1;
     _fp.plot();
     float _T = _init_T;
-    while(_T > 0.0001) {
+    while(_T > 0.01 || iter <= 2*k) {
       float avg_delta_cost = 0;
-      for(uint i = 1; i<=3*rnd; ++i) {
+      for(uint i = 1; i<=rnd; ++i) {
         float prv_cost = sum_norm_cost(_fp.cost());
         typename FLOOR_PLAN<ID, LEN>::TREE _cur_sol = _fp.get_tree();
         _fp.perturb();
@@ -71,16 +70,20 @@ public:
         if(*_recs.begin()) --_N_feas;
         _recs.pop_front();
         if(get<1>(costs) < _W && get<2>(costs) < _H) {
+          cerr << "feasible!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
           ++_N_feas;
           _recs.push_back(true);
         } else _recs.push_back(false);
         _alpha = _alpha_base + (1-_alpha_base)*_N_feas/_N;
         float cost = sum_norm_cost(costs);
-        avg_delta_cost += (cost - prv_cost);
-        if(cost < _best_cost) {
-          _best_sol = _fp.get_tree();
-          _best_cost = cost;
-        } else if(randf() > expf((_best_cost-cost)/_T)) {
+        float delta_cost = cost - prv_cost;
+        avg_delta_cost += abs(delta_cost);
+        if(delta_cost < 0) {
+          if(cost < _best_cost) {
+            _best_sol = _fp.get_tree();
+            _best_cost = cost;
+          }
+        } else if(randf() > expf(-delta_cost/_T)) {
           _fp.restore(_cur_sol);
           _fp.init();
         }
@@ -89,6 +92,7 @@ public:
       if(iter <= k) _T = _init_T*avg_delta_cost/rnd/iter/c;
       else _T = _init_T*avg_delta_cost/rnd/iter;
     }
+    cerr << "iter " << iter << endl;
     _fp.restore(_best_sol);
     _fp.init();
     float cost = sum_norm_cost(_fp.cost());
@@ -99,7 +103,8 @@ private:
     const float r = float(get<2>(cost))/get<1>(cost);
     return _alpha*get<0>(cost)/_avg_hpwl 
          + _beta*get<1>(cost)*get<2>(cost)/_avg_area 
-         + (1-_alpha-_beta)*(r-_R)*(r-_R)/_avg_r;
+         + (1-_alpha-_beta)*(r-_R)*(r-_R)/_avg_r
+         + (get<1>(cost) > _W || get<2>(cost) > _H);
   }
   FLOOR_PLAN<ID, LEN>& _fp;
   typename FLOOR_PLAN<ID, LEN>::TREE _best_sol;
@@ -125,9 +130,10 @@ int main(int argc, char** argv) {
   fblcks >> ign >> Nblcks;
   bool do_plot = true;
   auto fp = FLOOR_PLAN<ushort, uint>(fnets, fblcks, argv, Nnets, Nblcks, W, H);
-  float P = 0.95, alpha_base = 0.3, beta = 0, R = float(H)/W;
+  float P = 0.95, alpha_base = 0.5, beta = 0, R = float(H)/W;
   auto sa = SA<ushort, uint>(fp, Nblcks, W, H, R, P, alpha_base, beta); 
-  uint k = 8, rnd = Nblcks, c = 0.1;
+  uint k = Nblcks, rnd = 100*Nblcks;
+  float c = 100;
   sa.run(k, rnd, c);
   ofstream outs(argv[4], ifstream::out);
   fp.output(outs);

@@ -180,7 +180,7 @@ public:
   TREE(ID Nblcks) {
     vector<ID> _tree(Nblcks+1);
     iota(_tree.begin()+1, _tree.end(), 1);
-    random_shuffle(_tree.begin()+1, _tree.end());
+    //random_shuffle(_tree.begin()+1, _tree.end());
     _nodes.resize(Nblcks+1);
     for(ID i = 1; i<=Nblcks; ++i) {
       ID& id = _tree[i];
