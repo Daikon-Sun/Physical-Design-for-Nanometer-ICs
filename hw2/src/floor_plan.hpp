@@ -24,8 +24,8 @@ public:
   class TREE;
   FLOOR_PLAN(ifstream& fnets, ifstream& fblcks, char** argv,
              int Nnets, int Nblcks, int W, int H) 
-    : _out_rpt(argv[4]), _Nnets(Nnets), _Nblcks(Nblcks), 
-      _tree(Nblcks), _W(W), _H(H) {
+    : _out_rpt(argv[4]), _Nnets(Nnets), _Nblcks(Nblcks),
+      _tree(Nblcks), _W(W), _H(H), has_init(false) {
     _alpha = stod(argv[1]);
     //reading input.block
     string ign;
@@ -49,9 +49,12 @@ public:
     fnets.close();
   }
   void init() {
+    assert(!has_init);
     _tree.init(_blcks);
+    has_init = true;
   }
-  tuple<int, int, int> cost() {
+  tuple<uint, uint, uint> cost() const {
+    assert(has_init);
     int hpwl = 0;
     LEN MAX_X = 0, MAX_Y = 0;
     for(auto& net:_nets) {
@@ -61,14 +64,14 @@ public:
       for(auto& id:net._blcks) {
         LEN x = _blcks[id]._x + (id<=_Nblcks ? _blcks[id]._w/2 : 0);
         LEN y = _blcks[id]._y + (id<=_Nblcks ? _blcks[id]._h/2 : 0);
+        min_x = min(min_x, x);
+        max_x = max(max_x, x);
+        min_y = min(min_y, y);
+        max_y = max(max_y, y);
         if(id <= _Nblcks) {
           MAX_X = max(MAX_X, _blcks[id]._x+_blcks[id]._w);
           MAX_Y = max(MAX_Y, _blcks[id]._y+_blcks[id]._h);
         }
-        min_x = min(min_x, x);
-        max_x = max(min_x, x);
-        min_y = min(min_y, y);
-        max_y = max(min_y, y);
       }
       hpwl += ((max_x-min_x) + (max_y-min_y));
     }
@@ -78,20 +81,19 @@ public:
     return {hpwl, MAX_X, MAX_Y};
   }
   void plot() {
+    assert(has_init);
     Gnuplot gp;
     gp << "set xrange [0:" << _W*2 << "]\nset yrange [0:" << _H*2 << "]" << endl;
     for(uint i = 1; i<=_Nblcks; ++i) {
       const BLOCK& blck = _blcks[i];
-      if(!_tree.exist(i)) {
-        //cerr << int(i) << " don't exists!" << endl;
-        continue;
-      }
       gp << "set object " << int(i) << " rect from " << int(blck._x) 
          << "," << int(blck._y) << " to " << int(blck._x+blck._w) << "," 
-         << int(blck._y+blck._h) << "fc lt 2" << endl;
+         << int(blck._y+blck._h) << " fc rgb \"gray\" front" << endl;
       gp << "set label \"" << int(blck._id) << "\" at " << int(blck._x+blck._w/2)
-         << "," << int(blck._y+blck._h/2) << endl;
+         << "," << int(blck._y+blck._h/2) << " front" << endl;
     }
+    gp << "set object " << _Nblcks+1 << " rect from 0,0 to " << _W << "," << _H
+       << " fc rgb \"red\" back" << endl;
     gp << "set nokey" << endl;
     gp << "set size ratio -1" << endl;
     gp << "plot '-' w p ls 1" << endl;
@@ -99,6 +101,7 @@ public:
     gp << "pause -1" << endl;
   }
   void output(ostream& out) {
+    assert(has_init);
     int width, height, hpwl; tie(hpwl, width, height) = cost();
     out << _alpha*width*height + (1-_alpha)*hpwl << endl;
     out << hpwl << endl;
@@ -106,30 +109,38 @@ public:
     out << width << " " << height << endl;
     out << double(clock()-start_time)/CLOCKS_PER_SEC << endl;
     for(ID i = 1; i<=_Nblcks; ++i) {
-      if(!_tree.exist(i)) continue;
       out << _blcks[i]._name << " " << int(_blcks[i]._x) << " "
           << int(_blcks[i]._y) << " " << int(_blcks[i]._x+_blcks[i]._w) << " "
           << int(_blcks[i]._y+_blcks[i]._h) << endl;
     }
   }
+  void perturb() {
+    //switch(rand()%3) {
+    switch(rand()%3) {
+      case 0: rotate(); break;
+      case 1: if(del_and_ins()) break;
+      case 2: swap_two_nodes(); break;
+      default: __builtin_unreachable();
+    }
+    has_init = false;
+  }
   void rotate() {
     ID id = (rand()%_Nblcks)+1;
+    //cerr << "------------rotating block: " << id << endl;
     _blcks[id]._rot = !_blcks[id]._rot;
     swap(_blcks[id]._w, _blcks[id]._h);
     _tree.rotate(id);
-    //cerr << "rotating block: " << id << endl;
   }
-  void del_and_ins() {
-    //_tree.print();
+  bool del_and_ins() {
     ID id = (rand()%_Nblcks)+1;
-    if(!_tree.del_from_tree(id)) return;
+    if(!_tree.del_from_tree(id)) return false;
     //cerr << "deleting " << int(id) << endl;
     ID par = (rand()%_Nblcks)+1;
     bool left = rand()%2, do_swap = rand()%2;
     while(id == par) par = (rand()%_Nblcks)+1;
     //cerr << "inserting " << int(par) << " " << left << " " << do_swap << endl;
     _tree.ins_to_tree(par, id, left, do_swap);
-    //_tree.print();
+    return true;
   }
   void swap_two_nodes() {
     ID id1 = rand()%_Nblcks;
@@ -138,6 +149,17 @@ public:
     assert(id1 != id2);
     _tree.swap_two_nodes(id1+1, id2+1);
   }
+  void restore(const TREE& tree) {
+    for(ID i = 1; i<=_Nblcks; ++i) assert(_tree.rot(i) == _blcks[i]._rot);
+    _tree = tree;
+    for(ID i = 1; i<=_Nblcks; ++i) if(_blcks[i]._rot ^ _tree.rot(i)) {
+      swap(_blcks[i]._w, _blcks[i]._h);
+      _blcks[i]._rot = _tree.rot(i);
+    }
+    has_init = false;
+  }
+  const float _R() { return float(_H)/_W; }
+  TREE get_tree() { return _tree; }
 private:
   void read_in(vector<BLOCK>& vec, ifstream& ifs, map<string, ID>& m,
                ID num, uchar len) {
@@ -157,6 +179,7 @@ private:
   vector<NET> _nets;
   TREE _tree;
   map<string, ID> _blcks_id;
+  bool has_init;
 };
 template<typename ID, typename LEN> class FLOOR_PLAN<ID, LEN>::TREE {
 public:
@@ -244,10 +267,10 @@ public:
     ID rt = _nodes[0]._par;
     cerr << "root " << int(rt) << endl;
     for(uint i = 1; i<_nodes.size(); ++i) 
-      cerr << _nodes[i]._par << " " << _nodes[i]._l << " " 
-           << _nodes[i]._r << endl;
+      cerr << _nodes[i]._par << " " << _nodes[i]._l << " " << _nodes[i]._r
+           << " " << _nodes[i]._rot << endl;
   }
-  bool exist(ID id) { return _nodes[id]._par || _nodes[0]._par == id; }
+  bool rot(ID id) { return _nodes[id]._rot; }
 private:
   void dfs(ID id, ID par, list<ID>& cy, auto& cur, vector<BLOCK>& blcks) {
     if(_nodes[id]._l) {
@@ -301,7 +324,6 @@ private:
     swap(_nodes[id1]._par, _nodes[id2]._par);
     swap(_nodes[id1]._l, _nodes[id2]._l);
     swap(_nodes[id1]._r, _nodes[id2]._r);
-    swap(_nodes[id1]._rot, _nodes[id2]._rot);
   }
   void swap_near(ID par, ID id) {
     if(par == _nodes[0]._par) _nodes[0]._par = id;
@@ -323,14 +345,14 @@ private:
       if(_nodes[par]._l) _nodes[_nodes[par]._l]._par = id;
       swap(_nodes[id]._l, _nodes[par]._l);
     } else assert(false);
+    _nodes[id]._par = _nodes[par]._par;
     _nodes[par]._par = id;
-    _nodes[id]._par = par;
   }
   vector<NODE> _nodes;
 };
 template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::BLOCK {
-  BLOCK(ID id, LEN w, LEN h, const string& name, bool rot = false, 
-        LEN x = 0, LEN y = 0)
+  BLOCK(ID id, LEN w, LEN h, const string& name, LEN x = 0, LEN y = 0, 
+        bool rot = false)
     : _id(id), _w(w), _h(h), _name(name), _x(x), _y(y), _rot(rot) {};
   ID _id;
   LEN _w, _h, _x, _y;
