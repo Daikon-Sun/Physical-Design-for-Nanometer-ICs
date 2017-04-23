@@ -14,7 +14,7 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 
 extern clock_t start_time;
-constexpr float rot_prob = 0.3;
+constexpr float rot_prob = 0.33;
 constexpr float del_and_ins_prob = 0.5;
 
 template<typename ID, typename LEN>
@@ -25,7 +25,7 @@ public:
   struct NODE;
   class TREE;
   FLOOR_PLAN(ifstream& fnets, ifstream& fblcks, char** argv,
-             int Nnets, int Nblcks, int W, int H) 
+             uint Nnets, uint Nblcks, uint W, uint H) 
     : _out_rpt(argv[4]), _Nnets(Nnets), _Nblcks(Nblcks),
       _tree(Nblcks), _W(W), _H(H), has_init(false) {
     _alpha = stod(argv[1]);
@@ -36,6 +36,7 @@ public:
     read_in(_blcks, fblcks, _blcks_id, _Nblcks, 1);
     read_in(_blcks, fblcks, _blcks_id, _Ntrmns, 2);
     fblcks.close();
+    for(ID i = 1; i<=Nblcks; ++i) _blcks[i]._rot = _tree.rot(i);
     //reading input.nets
     _nets.reserve(_Nnets);
     for(ID i = 1; i<=_Nnets; ++i) {
@@ -51,14 +52,13 @@ public:
     fnets.close();
   }
   void init() {
-    assert(!has_init);
+    if(has_init) return;
     _tree.init(_blcks);
     has_init = true;
   }
   tuple<uint, uint, uint> cost() const {
     assert(has_init);
-    int hpwl = 0;
-    LEN MAX_X = 0, MAX_Y = 0;
+    uint hpwl = 0, MAX_X = 0, MAX_Y = 0;
     for(auto& net:_nets) {
       LEN min_x, min_y, max_x, max_y;
       min_x = min_y = (1<<(sizeof(LEN)*8-1));
@@ -77,15 +77,12 @@ public:
       }
       hpwl += ((max_x-min_x) + (max_y-min_y));
     }
-    //cerr << "hpwl = " << (int)hpwl << endl;
-    //cerr << "area = " << (int)MAX_X*MAX_Y << endl;
-    //cerr << "cost = " << _alpha*MAX_X*MAX_Y + (1-_alpha)*hpwl << endl;
     return {hpwl, MAX_X, MAX_Y};
   }
   void plot() const {
     assert(has_init);
     Gnuplot gp;
-    gp << "set xrange [0:" << _W*2 << "]\nset yrange [0:" << _H*2 << "]" << endl;
+    gp << "set xrange [0:" << _W*3 << "]\nset yrange [0:" << _H*3 << "]" << endl;
     for(uint i = 1; i<=_Nblcks; ++i) {
       const BLOCK& blck = _blcks[i];
       gp << "set object " << int(i) << " rect from " << int(blck._x) 
@@ -137,12 +134,15 @@ public:
 private:
   void read_in(vector<BLOCK>& vec, ifstream& ifs, map<string, ID>& m,
                ID num, uchar len) {
+    const float R = _R();
     for(ID i = 1; i<=num; ++i) {
-      vector<string> names(2); LEN w, h;
-      for(uchar j = 0; j<len; ++j) ifs >> names[j];
+      string name; LEN w, h;
+      ifs >> name;
+      if(len == 2) { string ign; ifs >> ign; }
       ifs >> w >> h;
-      m[names[0]] = i;
-      if(len == 1) vec.emplace_back(i, w, h, names[0]);
+      //if(abs(float(w)/h-R) < abs(float(h)/w-R)) swap(w, h);
+      m[name] = i;
+      if(len == 1) vec.emplace_back(i, w, h, name);
       else vec.emplace_back(i, 0, 0, "", w, h);
     }
   }
@@ -180,11 +180,12 @@ public:
   TREE(ID Nblcks) {
     vector<ID> _tree(Nblcks+1);
     iota(_tree.begin()+1, _tree.end(), 1);
-    //random_shuffle(_tree.begin()+1, _tree.end());
+    random_shuffle(_tree.begin()+1, _tree.end());
     _nodes.resize(Nblcks+1);
     for(ID i = 1; i<=Nblcks; ++i) {
       ID& id = _tree[i];
       _nodes[id]._id = id;
+      if(randb()) _nodes[id]._rot = true;
       _nodes[id]._par = _tree[i/2];
       if(i*2 <= Nblcks) _nodes[id]._l = _tree[i*2];
       if(i*2+1 <= Nblcks) _nodes[id]._r = _tree[i*2+1];
@@ -210,8 +211,7 @@ public:
     if(_nodes[id]._l && _nodes[id]._r) {
       while(_nodes[id]._l && _nodes[id]._r) {
         ID par = id;
-        bool left = randb();
-        id = (left?_nodes[id]._l:_nodes[id]._r);
+        id = (randb()?_nodes[id]._l:_nodes[id]._r);
         swap_near(par, id);
         id = par;
       }
@@ -260,7 +260,7 @@ public:
       _nodes[par]._r = id;
       _nodes[id]._par = par;
     }
-    if(do_swap) swap(_nodes[id]._l, _nodes[id]._r);
+    //if(do_swap) swap(_nodes[id]._l, _nodes[id]._r);
   }
   void print() {
     ID rt = _nodes[0]._par;
