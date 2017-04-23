@@ -14,6 +14,8 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 
 extern clock_t start_time;
+constexpr float rot_prob = 0.3;
+constexpr float del_and_ins_prob = 0.5;
 
 template<typename ID, typename LEN>
 class FLOOR_PLAN {
@@ -80,7 +82,7 @@ public:
     //cerr << "cost = " << _alpha*MAX_X*MAX_Y + (1-_alpha)*hpwl << endl;
     return {hpwl, MAX_X, MAX_Y};
   }
-  void plot() {
+  void plot() const {
     assert(has_init);
     Gnuplot gp;
     gp << "set xrange [0:" << _W*2 << "]\nset yrange [0:" << _H*2 << "]" << endl;
@@ -100,7 +102,7 @@ public:
     gp << "0 0" << endl;
     gp << "pause -1" << endl;
   }
-  void output(ostream& out) {
+  void output(ostream& out) const {
     assert(has_init);
     int width, height, hpwl; tie(hpwl, width, height) = cost();
     out << _alpha*width*height + (1-_alpha)*hpwl << endl;
@@ -115,42 +117,14 @@ public:
     }
   }
   void perturb() {
-    //switch(rand()%3) {
-    switch(rand()%3) {
-      case 0: rotate(); break;
-      case 1: if(del_and_ins()) break;
-      case 2: swap_two_nodes(); break;
-      default: __builtin_unreachable();
-    }
+    float p1 = randf();
+    float p2 = randf();
+    if(p1 < rot_prob) rotate();
+    else if(p2 < del_and_ins_prob) del_and_ins();
+    else swap_two_nodes();
     has_init = false;
   }
-  void rotate() {
-    ID id = (rand()%_Nblcks)+1;
-    //cerr << "------------rotating block: " << id << endl;
-    _blcks[id]._rot = !_blcks[id]._rot;
-    swap(_blcks[id]._w, _blcks[id]._h);
-    _tree.rotate(id);
-  }
-  bool del_and_ins() {
-    ID id = (rand()%_Nblcks)+1;
-    if(!_tree.del_from_tree(id)) return false;
-    //cerr << "deleting " << int(id) << endl;
-    ID par = (rand()%_Nblcks)+1;
-    bool left = rand()%2, do_swap = rand()%2;
-    while(id == par) par = (rand()%_Nblcks)+1;
-    //cerr << "inserting " << int(par) << " " << left << " " << do_swap << endl;
-    _tree.ins_to_tree(par, id, left, do_swap);
-    return true;
-  }
-  void swap_two_nodes() {
-    ID id1 = rand()%_Nblcks;
-    ID id2 = (id1+((rand()%(_Nblcks-1))+1))%_Nblcks;
-    //cerr << "swap " << int(id1+1) << " " << int(id2+1) << endl;
-    assert(id1 != id2);
-    _tree.swap_two_nodes(id1+1, id2+1);
-  }
   void restore(const TREE& tree) {
-    for(ID i = 1; i<=_Nblcks; ++i) assert(_tree.rot(i) == _blcks[i]._rot);
     _tree = tree;
     for(ID i = 1; i<=_Nblcks; ++i) if(_blcks[i]._rot ^ _tree.rot(i)) {
       swap(_blcks[i]._w, _blcks[i]._h);
@@ -171,6 +145,26 @@ private:
       if(len == 1) vec.emplace_back(i, w, h, names[0]);
       else vec.emplace_back(i, 0, 0, "", w, h);
     }
+  }
+  void rotate() {
+    ID id = (rand()%_Nblcks)+1;
+    _blcks[id]._rot = !_blcks[id]._rot;
+    swap(_blcks[id]._w, _blcks[id]._h);
+    _tree.rotate(id);
+  }
+  bool del_and_ins() {
+    ID id = (rand()%_Nblcks)+1;
+    _tree.del_from_tree(id);
+    ID par = (rand()%_Nblcks)+1;
+    bool left = randb(), do_swap = randb();
+    while(id == par) par = (rand()%_Nblcks)+1;
+    _tree.ins_to_tree(par, id, left, do_swap);
+    return true;
+  }
+  void swap_two_nodes() {
+    ID id1 = rand()%_Nblcks;
+    ID id2 = (id1+((rand()%(_Nblcks-1))+1))%_Nblcks;
+    _tree.swap_two_nodes(id1+1, id2+1);
   }
   double _alpha;
   uint _W, _H, _Nblcks, _Ntrmns, _Nnets;
@@ -212,9 +206,17 @@ public:
     else if(_nodes[id2]._par == id1) swap_near(id1, id2);
     else swap_not_near(id1, id2);
   }
-  bool del_from_tree(ID id) {
-    if(_nodes[id]._l && _nodes[id]._r) return false;
-    if(_nodes[id]._l) {
+  void del_from_tree(ID id) {
+    if(_nodes[id]._l && _nodes[id]._r) {
+      while(_nodes[id]._l && _nodes[id]._r) {
+        ID par = id;
+        bool left = randb();
+        id = (left?_nodes[id]._l:_nodes[id]._r);
+        swap_near(par, id);
+        id = par;
+      }
+      del_from_tree(id);
+    } else if(_nodes[id]._l) {
       if(id == _nodes[0]._par) {
         _nodes[0]._par = _nodes[id]._l;
         _nodes[_nodes[id]._l]._par = 0;
@@ -225,7 +227,6 @@ public:
           _nodes[_nodes[id]._par]._l = _nodes[id]._l;
         else if(id == _nodes[_nodes[id]._par]._r)
           _nodes[_nodes[id]._par]._r = _nodes[id]._l;
-        else assert(false);
       } 
     } else if(_nodes[id]._r) {
       if(id == _nodes[0]._par) {
@@ -238,14 +239,12 @@ public:
           _nodes[_nodes[id]._par]._l = _nodes[id]._r;
         else if(id == _nodes[_nodes[id]._par]._r)
           _nodes[_nodes[id]._par]._r = _nodes[id]._r;
-        else assert(false);
       } 
     } else {
       if(id == _nodes[_nodes[id]._par]._l) _nodes[_nodes[id]._par]._l = 0;
       else if(id == _nodes[_nodes[id]._par]._r) _nodes[_nodes[id]._par]._r = 0;
     }
     _nodes[id]._par = 0;
-    return true;
   }
   void ins_to_tree(ID par, ID id, bool left, bool do_swap) {
     if(left) {
@@ -329,7 +328,6 @@ private:
     if(par == _nodes[0]._par) _nodes[0]._par = id;
     else if(par == _nodes[_nodes[par]._par]._l) _nodes[_nodes[par]._par]._l = id;
     else if(par == _nodes[_nodes[par]._par]._r) _nodes[_nodes[par]._par]._r = id;
-    else assert(false);
     if(_nodes[par]._l == id) {
       _nodes[par]._l = _nodes[id]._l;
       if(_nodes[id]._l) _nodes[_nodes[id]._l]._par = par;
@@ -344,7 +342,7 @@ private:
       if(_nodes[id]._l) _nodes[_nodes[id]._l]._par = par;
       if(_nodes[par]._l) _nodes[_nodes[par]._l]._par = id;
       swap(_nodes[id]._l, _nodes[par]._l);
-    } else assert(false);
+    }
     _nodes[id]._par = _nodes[par]._par;
     _nodes[par]._par = id;
   }
