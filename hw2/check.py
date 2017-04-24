@@ -96,7 +96,6 @@ for j, net in enumerate(nets):
     mx_x = max(mx_x, x)
     mx_y = max(mx_y, y)
   hpwl += (mx_x-mn_x+mx_y-mn_y)
-print(hpwl/2)
 
 area = max_x*max_y
 ccost = float(sys.argv[3])*area+(1-float(sys.argv[3]))*hpwl/2

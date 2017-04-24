@@ -109,7 +109,7 @@ public:
   void plot() const {
     //assert(_has_init);
     Gnuplot gp;
-    gp << "set xrange [0:" << _W*4 << "]\nset yrange [0:" << _H*4 << "]\n";
+    gp << "set xrange [0:" << _W+500 << "]\nset yrange [0:" << _H+500 << "]\n";
     for(ID i = 1; i<=_Nblcks; ++i) {
       const BLOCK& blck = _blcks[i];
       gp << "set object " << int(i) << " rect from " << int(blck._x) 

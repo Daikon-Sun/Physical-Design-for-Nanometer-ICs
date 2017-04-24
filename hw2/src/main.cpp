@@ -9,7 +9,7 @@ using namespace std;
 
 clock_t start_time = clock();
 
-constexpr float temp_th = 0.03, rej_ratio = 0.99;
+constexpr float temp_th = 0.001, rej_ratio = 0.99;
 
 inline float randf() { return float(rand())/RAND_MAX; }
 inline float randb() { return rand()%2; }
@@ -71,14 +71,14 @@ public:
     _init_T = -avg_cost/_N/logf(P);
   };
   void run(const int k, const int rnd, const float c) {
-    const int reset_th = 15*_Nblcks, stop_th = 30*_Nblcks;
+    vector<float> Ts(1, _init_T);
+    const int reset_th = 3*_Nblcks+30, stop_th = 6*_Nblcks+10;
     _fp.init();
     int iter = 1, tot_feas = 0;
     float _T = 2*_init_T, prv_cost = norm_cost(_fp.cost());
     int rej_num = 0, cnt = 1;
     typename FLOOR_PLAN<ID, LEN>::TREE last_sol = _fp.get_tree();
     while(_T > temp_th || float(rej_num) <= rej_ratio*cnt || !tot_feas) {
-      if(tot_feas) _beta = float(iter)/stop_th/4;
       float avg_delta_cost = 0;
       rej_num = 0, cnt = 1;
       for(; cnt<=rnd; ++cnt) {
@@ -95,7 +95,10 @@ public:
           ++_N_feas;
           _recs.push_back(true);
           ++tot_feas;
-          if(tot_feas == 1) _best_sol = _fp.get_tree();
+          if(tot_feas == 1) {
+            _best_sol = _fp.get_tree();
+            _beta = 0.2;
+          }
         } else _recs.push_back(false);
         _alpha = _alpha_base + (1-_alpha_base)*_N_feas/_N;
 
@@ -116,6 +119,7 @@ public:
       ++iter;
       if(iter <= k) _T = _init_T*avg_delta_cost/cnt/iter/c;
       else _T = _init_T*avg_delta_cost/cnt/iter;
+      //Ts.push_back(_T);
       _fp.init();
       if(!tot_feas) {
         if(iter > reset_th) {
@@ -127,6 +131,7 @@ public:
     }
     _fp.restore(_best_sol);
     _fp.init();
+    //_fp.plot();
     int3 costs = _fp.cost();
     int hpwl = get<0>(costs);
     int area = get<1>(costs)*get<2>(costs);
@@ -142,7 +147,7 @@ public:
     cerr << "       area: " << area << '\n';
     cerr << " total cost: " << _best_cost << '\n';
     //float cost = norm_cost(_fp.cost());
-    //int limit = 100000;
+    //int limit = 1000000;
     //vector<int> axis(limit);
     //iota(axis.begin(), axis.end(), 1);
     //plot_2d<float, int>(Ts, axis, true, limit);
@@ -152,7 +157,7 @@ private:
   float norm_cost(const int3& cost) const {
     const float r = float(get<2>(cost))/get<1>(cost);
     return (_alpha*get<1>(cost)*get<2>(cost)/_avg_area
-         + _beta*get<0>(cost)/_avg_hpwl
+         + _beta*get<0>(cost)/_avg_hpwl/2.
          + (1-_alpha-_beta)*(r-_R)*(r-_R)/_avg_r);
   }
   float true_cost(const int& hpwl, const int& area) const {
@@ -186,8 +191,8 @@ int main(int argc, char** argv) {
   fblcks >> ign >> W >> H;
   fblcks >> ign >> Nblcks;
   float P = 0.9, alpha_base = 0.5, beta = 0, R = float(H)/W;
-  int k = max(7, Nblcks/5), rnd = 16*Nblcks;
-  float c = max(120-int(Nblcks), 10);
+  int k = max(3, Nblcks/11), rnd = 3*Nblcks+10;
+  float c = max(90-int(Nblcks), 10);
   bool use_char = (Nblcks<<2) < CHAR_MAX;
   bool use_short = (max(W, H)<<4) < SHRT_MAX;
   if(use_char && use_short) {
