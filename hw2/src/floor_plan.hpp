@@ -60,6 +60,7 @@ public:
         net._blcks.push_back(bid);
         if(bid > _Nblcks) net.update(_blcks[bid]._x, _blcks[bid]._y);
       }
+      net.do_sort();
     }
     fnets.close();
   }
@@ -84,11 +85,17 @@ public:
       LEN min_x = (LEN)2*net._mnx, min_y = (LEN)2*net._mny; 
       LEN max_x = (LEN)2*net._mxx, max_y = (LEN)2*net._mxy; 
       if(min_x > 0)
-        for(auto& id:net._blcks) if(id <= _Nblcks)
-          min_x = min(min_x, LEN(2*_blcks[id]._x + _blcks[id]._w));
+        for(auto& id:net._blcks) {
+          if(id <= _Nblcks)
+            min_x = min(min_x, LEN(2*_blcks[id]._x + _blcks[id]._w));
+          else break;
+        }
       if(min_y > 0)
-        for(auto& id:net._blcks) if(id <= _Nblcks)
-          min_y = min(min_y, LEN(2*_blcks[id]._y + _blcks[id]._h));
+        for(auto& id:net._blcks) {
+          if(id <= _Nblcks)
+            min_y = min(min_y, LEN(2*_blcks[id]._y + _blcks[id]._h));
+          else break;
+        }
       for(auto& id:net._blcks) if(id <= _Nblcks) {
         const LEN& x = LEN(2*_blcks[id]._x + _blcks[id]._w);
         const LEN& y = LEN(2*_blcks[id]._y + _blcks[id]._h);
@@ -439,6 +446,7 @@ template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NET {
     _mnx = min(_mnx, x);
     _mny = min(_mny, y);
   }
+  void do_sort() { sort(_blcks.begin(), _blcks.end()); }
   ID _id;
   LEN _mxx, _mxy, _mnx, _mny;
   vector<ID> _blcks;
