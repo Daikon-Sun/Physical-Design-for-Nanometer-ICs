@@ -1,3 +1,0 @@
-/home/daikon/Documents/PD2017/hw2/CMakeFiles/rebuild_cache.dir
-/home/daikon/Documents/PD2017/hw2/CMakeFiles/edit_cache.dir
-/home/daikon/Documents/PD2017/hw2/CMakeFiles/main.dir
