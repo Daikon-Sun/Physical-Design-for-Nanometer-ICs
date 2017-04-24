@@ -79,19 +79,19 @@ public:
       }
       if(!get_hpwl) return {1, MAX_X, MAX_Y};
     }
-    float hpwl = 0;
+    int hpwl = 0;
     for(auto& net:_nets) {
-      float min_x = net._mnx, min_y = net._mny; 
-      float max_x = net._mxx, max_y = net._mxy; 
+      LEN min_x = (LEN)2*net._mnx, min_y = (LEN)2*net._mny; 
+      LEN max_x = (LEN)2*net._mxx, max_y = (LEN)2*net._mxy; 
       if(min_x > 0)
         for(auto& id:net._blcks) if(id <= _Nblcks)
-          min_x = min(min_x, _blcks[id]._x + _blcks[id]._w / 2.0f);
+          min_x = min(min_x, LEN(2*_blcks[id]._x + _blcks[id]._w));
       if(min_y > 0)
         for(auto& id:net._blcks) if(id <= _Nblcks)
-          min_y = min(min_y, _blcks[id]._y + _blcks[id]._h / 2.0f);
+          min_y = min(min_y, LEN(2*_blcks[id]._y + _blcks[id]._h));
       for(auto& id:net._blcks) if(id <= _Nblcks) {
-        const float& x = _blcks[id]._x + _blcks[id]._w/2.0;
-        const float& y = _blcks[id]._y + _blcks[id]._h/2.0;
+        const LEN& x = LEN(2*_blcks[id]._x + _blcks[id]._w);
+        const LEN& y = LEN(2*_blcks[id]._y + _blcks[id]._h);
         max_x = max(max_x, x);
         max_y = max(max_y, y);
       }
@@ -124,10 +124,9 @@ public:
   }
   void output(ostream& out) const {
     //assert(_has_init);
-    float hpwl;
-    int width, height; tie(hpwl, width, height) = cost();
-    out << setprecision(10) << _alpha*width*height + (1-_alpha)*hpwl << '\n';
-    out << hpwl << '\n';
+    int width, height, hpwl; tie(hpwl, width, height) = cost();
+    out << setprecision(10) << _alpha*width*height + (1-_alpha)*hpwl/2. << '\n';
+    out << hpwl/2. << '\n';
     out << width*height << '\n';
     out << width << " " << height << '\n';
     out << double(clock()-start_time)/CLOCKS_PER_SEC << '\n';
@@ -433,7 +432,7 @@ template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::BLOCK {
 };
 template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NET {
   NET(ID id) : _id(id), _mxx(0), _mxy(0), 
-               _mnx(1<<(sizeof(LEN)*8-2)), _mny(1<<(sizeof(LEN)*8-2)) {};
+               _mnx(1<<(sizeof(LEN)*8-3)), _mny(1<<(sizeof(LEN)*8-3)) {};
   void update(LEN x, LEN y) {
     _mxx = max(_mxx, x);
     _mxy = max(_mxy, y);

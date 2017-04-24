@@ -80,14 +80,14 @@ for j, net in enumerate(nets):
     for i, m in enumerate(macros):
       if names[i] == pin:
         done = True
-        x = m[0]+(m[2]-m[0])/2
-        y = m[1]+(m[3]-m[1])/2
+        x = 2*m[0]+(m[2]-m[0])
+        y = 2*m[1]+(m[3]-m[1])
         break
     if not done:
       for term in terminals:
         if term[0] == pin:
-          x = term[1]
-          y = term[2]
+          x = 2*term[1]
+          y = 2*term[2]
           done = True
           break
     assert done
@@ -96,9 +96,10 @@ for j, net in enumerate(nets):
     mx_x = max(mx_x, x)
     mx_y = max(mx_y, y)
   hpwl += (mx_x-mn_x+mx_y-mn_y)
+print(hpwl/2)
 
 area = max_x*max_y
-ccost = float(sys.argv[3])*area+(1-float(sys.argv[3]))*hpwl
+ccost = float(sys.argv[3])*area+(1-float(sys.argv[3]))*hpwl/2
 
 print("#"*90)
 print("           input: {}".format(sys.argv[1]))
@@ -106,7 +107,7 @@ print("   num of blocks: {}".format(len(blocks)))
 print("num of terminals: {}".format(len(terminals)))
 print("     num of nets: {}".format(len(nets)))
 print(" area difference: {}".format((area-chip_area)/area))
-print(" hpwl difference: {}".format((hpwl-wirelength)/hpwl))
+print(" hpwl difference: {}".format((hpwl/2-wirelength)/hpwl/2))
 print(" cost difference: {}".format((cost-ccost)/cost))
 print("            SAME" if same else
       "       DIFFERENT")
