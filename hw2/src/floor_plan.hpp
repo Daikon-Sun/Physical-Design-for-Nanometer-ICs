@@ -25,10 +25,8 @@ public:
   FLOOR_PLAN(ifstream& fnets, ifstream& fblcks, char** argv,
              uint Nnets, uint Nblcks, uint W, uint H) 
     : _out_rpt(argv[4]), _Nnets(Nnets), _Nblcks(Nblcks),
-      _tree(Nblcks), _W(W), _H(H), _has_init(false),
-      _rot_prob(0.33), _del_and_ins_prob(0.5), _swap_prob(0.7) {
-    _alpha = stod(argv[1]);
-    _cnts.resize(_Nblcks+1);
+      _tree(Nblcks), _W(W), _H(H), _alpha(stof(argv[1])), _has_init(false),
+      _rot_prob(0.3), _del_and_ins_prob(0.5) {
     //reading input.block
     string ign;
     fblcks >> ign >> _Ntrmns;
@@ -39,7 +37,7 @@ public:
     uint cnt = 0;
     for(ID i = 1; i<=Nblcks; ++i) {
       uint min_wh = min(_W, _H);
-      if(false && max(_blcks[i]._w, _blcks[i]._h) > min_wh) {
+      if(max(_blcks[i]._w, _blcks[i]._h) > min_wh) {
         ++cnt;
         if(_blcks[i]._w > _W || _blcks[i]._h > _H) {
           _blcks[i]._rot = true;
@@ -51,12 +49,12 @@ public:
     _rot_prob *= (1-float(cnt)/Nblcks);
     //reading input.nets
     _nets.reserve(_Nnets);
-    for(ID i = 1; i<=_Nnets; ++i) {
+    for(uint i = 1; i<=_Nnets; ++i) {
       int deg; fnets >> ign >> deg;
       _nets.emplace_back(i);
       auto& net = _nets.back();
       net._blcks.reserve(deg);
-      for(int j = 0; j<deg; ++j) {
+      for(uint j = 0; j<deg; ++j) {
         string name; fnets >> name;
         ID bid = _blcks_id[name];
         net._blcks.push_back(bid);
@@ -75,60 +73,59 @@ public:
     uint hpwl = 0;
     LEN MAX_X = 0, MAX_Y = 0;
     for(ID i = 1; i<=_Nblcks; ++i) {
-      MAX_X = max(MAX_X, _blcks[i]._x+_blcks[i]._w);
-      MAX_Y = max(MAX_Y, _blcks[i]._y+_blcks[i]._h);
+      MAX_X = max(MAX_X, LEN(_blcks[i]._x+_blcks[i]._w));
+      MAX_Y = max(MAX_Y, LEN(_blcks[i]._y+_blcks[i]._h));
     }
-    //for(auto& net:_nets) {
-    //  LEN min_x = net._mnx, min_y = net._mny; 
-    //  LEN max_x = net._mxx, max_y = net._mxy; 
-    //  for(auto& id:net._blcks) if(id <= _Nblcks) {
-    //    LEN x = _blcks[id]._x + _blcks[id]._w/2;
-    //    LEN y = _blcks[id]._y + _blcks[id]._h/2;
-    //    min_x = min(min_x, x);
-    //    max_x = max(max_x, x);
-    //    min_y = min(min_y, y);
-    //    max_y = max(max_y, y);
-    //  }
-    //  hpwl += ((max_x-min_x) + (max_y-min_y));
-    //}
-    //return {hpwl, MAX_X, MAX_Y};
-    return {1, MAX_X, MAX_Y};
+    for(auto& net:_nets) {
+      LEN min_x = net._mnx, min_y = net._mny; 
+      LEN max_x = net._mxx, max_y = net._mxy; 
+      for(auto& id:net._blcks) if(id <= _Nblcks) {
+        LEN x = _blcks[id]._x + _blcks[id]._w/2;
+        LEN y = _blcks[id]._y + _blcks[id]._h/2;
+        min_x = min(min_x, x);
+        max_x = max(max_x, x);
+        min_y = min(min_y, y);
+        max_y = max(max_y, y);
+      }
+      hpwl += ((max_x-min_x) + (max_y-min_y));
+    }
+    return {hpwl, MAX_X, MAX_Y};
   }
   void plot() const {
     assert(_has_init);
     Gnuplot gp;
-    gp << "set xrange [0:" << _W*4 << "]\nset yrange [0:" << _H*4 << "]" << endl;
-    for(uint i = 1; i<=_Nblcks; ++i) {
+    gp << "set xrange [0:" << _W*4 << "]\nset yrange [0:" << _H*4 << "]\n";
+    for(ID i = 1; i<=_Nblcks; ++i) {
       const BLOCK& blck = _blcks[i];
       gp << "set object " << int(i) << " rect from " << int(blck._x) 
          << "," << int(blck._y) << " to " << int(blck._x+blck._w) << "," 
-         << int(blck._y+blck._h) << " fc rgb \"gray\" front" << endl;
+         << int(blck._y+blck._h) << " fc rgb \"gray\" front\n";
       gp << "set label \"" << int(blck._id) << "\" at " << int(blck._x+blck._w/2)
-         << "," << int(blck._y+blck._h/2) << " front" << endl;
+         << "," << int(blck._y+blck._h/2) << " front\n";
     }
     _tree.plot(gp, _blcks);
     gp << "set object " << _Nblcks+1 << " rect from 0,0 to " << _W << "," << _H
-       << " fc rgb \"red\" back" << endl;
-    gp << "set nokey" << endl;
-    gp << "set size ratio -1" << endl;
-    gp << "set style line 1 lc rgb \'#0060ad\' pt 6" << endl;
-    gp << "plot '-' w p ls 1" << endl;
-    for(uint i = _Nblcks+1; i<_blcks.size(); ++i)
-      gp << _blcks[i]._x << " " << _blcks[i]._y << endl;
-    gp << "e\npause -1" << endl;
+       << " fc rgb \"red\" back\n";
+    gp << "set nokey\n";
+    gp << "set size ratio -1\n";
+    gp << "set style line 1 lc rgb \'#0060ad\' pt 6\n";
+    gp << "plot '-' w p ls 1\n";
+    for(ID i = _Nblcks+1; i<_blcks.size(); ++i)
+      gp << _blcks[i]._x << " " << _blcks[i]._y << "\n";
+    gp << "e\npause -1\n";
   }
   void output(ostream& out) const {
     assert(_has_init);
     int width, height, hpwl; tie(hpwl, width, height) = cost();
-    out << _alpha*width*height + (1-_alpha)*hpwl << endl;
-    out << hpwl << endl;
-    out << width*height << endl;
-    out << width << " " << height << endl;
-    out << double(clock()-start_time)/CLOCKS_PER_SEC << endl;
+    out << _alpha*width*height + (1-_alpha)*hpwl << "\n";
+    out << hpwl << "\n";
+    out << width*height << "\n";
+    out << width << " " << height << "\n";
+    out << double(clock()-start_time)/CLOCKS_PER_SEC << "\n";
     for(ID i = 1; i<=_Nblcks; ++i) {
       out << _blcks[i]._name << " " << int(_blcks[i]._x) << " "
           << int(_blcks[i]._y) << " " << int(_blcks[i]._x+_blcks[i]._w) << " "
-          << int(_blcks[i]._y+_blcks[i]._h) << endl;
+          << int(_blcks[i]._y+_blcks[i]._h) << "\n";
     }
   }
   void perturb() {
@@ -136,7 +133,6 @@ public:
     if(p1 < _rot_prob) rotate();
     else if(p2 < _del_and_ins_prob) del_and_ins();
     else swap_two_nodes();
-    //else swap_children();
     _has_init = false;
   }
   void restore(const TREE& tree) {
@@ -147,16 +143,8 @@ public:
     }
     _has_init = false;
   }
-  void list_info() {
-    for(ID i = 1; i<=_Nblcks; ++i)
-      cerr << _cnts[i] << " ";
-    cerr << endl;
-  }
   const float _R() { return float(_H)/_W; }
-  TREE get_tree() { 
-    //for(ID i = 0; i<=_Nblcks; ++i) assert(_blcks[i]._rot == _tree.rot(i));
-    return _tree;
-  }
+  TREE get_tree() { return _tree; }
 private:
   void read_in(vector<BLOCK>& vec, ifstream& ifs, map<string, ID>& m,
                ID num, uchar len) {
@@ -183,20 +171,18 @@ private:
     ID par = (rand()%_Nblcks)+1;
     bool left = randb(), do_swap = randb();
     while(id == par) par = (rand()%_Nblcks)+1;
-    //cerr << "del_and_ins " << id << " " << par << endl;
     _tree.ins_to_tree(par, id, left, do_swap);
     return true;
   }
   void swap_two_nodes() {
     ID id1 = rand()%_Nblcks;
     ID id2 = (id1+((rand()%(_Nblcks-1))+1))%_Nblcks;
-    //cerr << "swap_two_nodes " << id1+1 << " " << id2+1 << endl;
     _tree.swap_two_nodes(id1+1, id2+1);
   }
   void swap_children() {
     _tree.swap_children();
   }
-  float _alpha, _rot_prob, _del_and_ins_prob, _swap_prob;
+  float _alpha, _rot_prob, _del_and_ins_prob;
   uint _W, _H, _Nblcks, _Ntrmns, _Nnets;
   string _out_rpt;
   vector<BLOCK> _blcks;
@@ -206,12 +192,10 @@ private:
   bool _has_init;
   vector<ID> _rotable;
   vector<bool> _bads;
-  vector<uint> _cnts;
 };
 template<typename ID, typename LEN> class FLOOR_PLAN<ID, LEN>::TREE {
 public:
   TREE(ID Nblcks) {
-    cerr << "here" << endl;
     vector<ID> _tree(Nblcks+1);
     iota(_tree.begin()+1, _tree.end(), 1);
     random_shuffle(_tree.begin()+1, _tree.end());
@@ -232,7 +216,6 @@ public:
     dfs(root_id, 0, cy, cur, blcks);
   }
   void rotate(ID id) {
-    //cerr << "rotate " << id << endl;
     _nodes[id]._rot = !_nodes[id]._rot;
   }
   void swap_two_nodes(ID id1, ID id2) {
@@ -302,27 +285,27 @@ public:
   }
   void print() {
     ID rt = _nodes[0]._par;
-    cerr << "root " << int(rt) << endl;
-    for(uint i = 1; i<_nodes.size(); ++i) 
+    cerr << "root " << int(rt) << "\n";
+    for(ID i = 1; i<_nodes.size(); ++i) 
       cerr << _nodes[i]._par << " " << _nodes[i]._l << " " << _nodes[i]._r
-           << " " << _nodes[i]._rot << endl;
+           << " " << _nodes[i]._rot << "\n";
   }
   void plot(Gnuplot& gp, const vector<BLOCK>& blcks) const {
-    uint cnt = 1;
+    ID cnt = 1;
     for(ID i = 1; i<_nodes.size(); ++i) {
       if(_nodes[i]._l) {
         const ID& l = _nodes[i]._l;
         gp << "set arrow " << cnt++ << " from " << blcks[i]._x+blcks[i]._w/2
            << "," << blcks[i]._y+blcks[i]._h/2 << " to "
            << blcks[l]._x+blcks[l]._w/2 << "," << blcks[l]._y+blcks[l]._h/2
-           << " nohead front" << endl;
+           << " nohead front\n";
       }
       if(_nodes[i]._r) {
         const ID& r = _nodes[i]._r;
         gp << "set arrow " << cnt++ << " from " << blcks[i]._x+blcks[i]._w/2
            << "," << blcks[i]._y+blcks[i]._h/2 << " to "
            << blcks[r]._x+blcks[r]._w/2 << "," << blcks[r]._y+blcks[r]._h/2
-           << " nohead front" << endl;
+           << " nohead front\n";
       }
     }
   }
