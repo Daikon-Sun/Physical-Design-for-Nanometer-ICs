@@ -23,7 +23,7 @@ public:
   struct NODE;
   class TREE;
   FLOOR_PLAN(ifstream& fnets, ifstream& fblcks, char** argv,
-             uint Nnets, uint Nblcks, uint W, uint H) 
+             int Nnets, int Nblcks, int W, int H) 
     : _out_rpt(argv[4]), _Nnets(Nnets), _Nblcks(Nblcks),
       _tree(Nblcks), _W(W), _H(H), _alpha(stof(argv[1])), _has_init(false),
       _rot_prob(0.3), _del_and_ins_prob(0.5) {
@@ -34,9 +34,9 @@ public:
     read_in(_blcks, fblcks, _blcks_id, _Nblcks, 1);
     read_in(_blcks, fblcks, _blcks_id, _Ntrmns, 2);
     fblcks.close();
-    uint cnt = 0;
+    int cnt = 0;
     for(ID i = 1; i<=Nblcks; ++i) {
-      uint min_wh = min(_W, _H);
+      int min_wh = min(_W, _H);
       if(max(_blcks[i]._w, _blcks[i]._h) > min_wh) {
         ++cnt;
         if(_blcks[i]._w > _W || _blcks[i]._h > _H) {
@@ -49,12 +49,12 @@ public:
     _rot_prob *= (1-float(cnt)/Nblcks);
     //reading input.nets
     _nets.reserve(_Nnets);
-    for(uint i = 1; i<=_Nnets; ++i) {
+    for(int i = 1; i<=_Nnets; ++i) {
       int deg; fnets >> ign >> deg;
       _nets.emplace_back(i);
       auto& net = _nets.back();
       net._blcks.reserve(deg);
-      for(uint j = 0; j<deg; ++j) {
+      for(int j = 0; j<deg; ++j) {
         string name; fnets >> name;
         ID bid = _blcks_id[name];
         net._blcks.push_back(bid);
@@ -68,20 +68,25 @@ public:
     _tree.init(_blcks);
     _has_init = true;
   }
-  uint3 cost() const {
+  int3 cost(bool get_area = true, bool get_hpwl = true) const {
+    assert(get_area|get_hpwl);
     assert(_has_init);
-    uint hpwl = 0;
+
     LEN MAX_X = 0, MAX_Y = 0;
-    for(ID i = 1; i<=_Nblcks; ++i) {
-      MAX_X = max(MAX_X, LEN(_blcks[i]._x+_blcks[i]._w));
-      MAX_Y = max(MAX_Y, LEN(_blcks[i]._y+_blcks[i]._h));
+    if(get_area) {
+      for(ID i = 1; i<=_Nblcks; ++i) {
+        MAX_X = max(MAX_X, LEN(_blcks[i]._x+_blcks[i]._w));
+        MAX_Y = max(MAX_Y, LEN(_blcks[i]._y+_blcks[i]._h));
+      }
+      if(!get_hpwl) return {1, MAX_X, MAX_Y};
     }
+    int hpwl = 0;
     for(auto& net:_nets) {
       LEN min_x = net._mnx, min_y = net._mny; 
       LEN max_x = net._mxx, max_y = net._mxy; 
       for(auto& id:net._blcks) if(id <= _Nblcks) {
-        LEN x = _blcks[id]._x + _blcks[id]._w/2;
-        LEN y = _blcks[id]._y + _blcks[id]._h/2;
+        const LEN& x = _blcks[id]._x + _blcks[id]._w/2;
+        const LEN& y = _blcks[id]._y + _blcks[id]._h/2;
         min_x = min(min_x, x);
         max_x = max(max_x, x);
         min_y = min(min_y, y);
@@ -156,7 +161,7 @@ private:
       ifs >> w >> h;
       m[name] = i;
       if(len == 1) vec.emplace_back(i, w, h, name);
-      else vec.emplace_back(i, 0, 0, "", w, h);
+      else vec.emplace_back(i, 0, 0, "t"+to_string(i), w, h);
     }
   }
   void rotate() {
@@ -183,7 +188,7 @@ private:
     _tree.swap_children();
   }
   float _alpha, _rot_prob, _del_and_ins_prob;
-  uint _W, _H, _Nblcks, _Ntrmns, _Nnets;
+  int _W, _H, _Nblcks, _Ntrmns, _Nnets;
   string _out_rpt;
   vector<BLOCK> _blcks;
   vector<NET> _nets;
@@ -295,14 +300,14 @@ public:
     for(ID i = 1; i<_nodes.size(); ++i) {
       if(_nodes[i]._l) {
         const ID& l = _nodes[i]._l;
-        gp << "set arrow " << cnt++ << " from " << blcks[i]._x+blcks[i]._w/2
+        gp << "set arrow " << int(cnt++) << " from " << blcks[i]._x+blcks[i]._w/2
            << "," << blcks[i]._y+blcks[i]._h/2 << " to "
            << blcks[l]._x+blcks[l]._w/2 << "," << blcks[l]._y+blcks[l]._h/2
            << " nohead front\n";
       }
       if(_nodes[i]._r) {
         const ID& r = _nodes[i]._r;
-        gp << "set arrow " << cnt++ << " from " << blcks[i]._x+blcks[i]._w/2
+        gp << "set arrow " << int(cnt++) << " from " << blcks[i]._x+blcks[i]._w/2
            << "," << blcks[i]._y+blcks[i]._h/2 << " to "
            << blcks[r]._x+blcks[r]._w/2 << "," << blcks[r]._y+blcks[r]._h/2
            << " nohead front\n";
@@ -411,9 +416,19 @@ template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NET {
   LEN _mxx, _mxy, _mnx, _mny;
   vector<ID> _blcks;
 };
+template<typename ID> struct FLOOR_PLAN<ID, LEN>::NODE {
+  NODE() : x(0) {};
+  ID _l() { return (x&(((1<<10)-1)<<1)); }
+  ID _r() { return (x&(((1<<10)-1)<<11)); }
+  ID _r() { return (x&(((1<<10)-1)<<21)); }
+  bool _rot() { return x&1; }
+  int x;
+};
+/*
 template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NODE {
   NODE(ID id = 0, ID l = 0, ID r = 0, ID par = 0, bool rot = false) : 
        _l(l), _r(r), _par(par), _rot(rot) {};
   ID _l, _r, _par;
   bool _rot;
 };
+*/
