@@ -14,8 +14,6 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 
 extern clock_t start_time;
-constexpr float rot_prob = 0.33;
-constexpr float del_and_ins_prob = 0.5;
 
 template<typename ID, typename LEN>
 class FLOOR_PLAN {
@@ -27,7 +25,8 @@ public:
   FLOOR_PLAN(ifstream& fnets, ifstream& fblcks, char** argv,
              uint Nnets, uint Nblcks, uint W, uint H) 
     : _out_rpt(argv[4]), _Nnets(Nnets), _Nblcks(Nblcks),
-      _tree(Nblcks), _W(W), _H(H), has_init(false) {
+      _tree(Nblcks), _W(W), _H(H), _has_init(false),
+      _rot_prob(0.3), _del_and_ins_prob(0.7), _swap_prob(0.7) {
     _alpha = stod(argv[1]);
     //reading input.block
     string ign;
@@ -36,7 +35,19 @@ public:
     read_in(_blcks, fblcks, _blcks_id, _Nblcks, 1);
     read_in(_blcks, fblcks, _blcks_id, _Ntrmns, 2);
     fblcks.close();
-    for(ID i = 1; i<=Nblcks; ++i) _blcks[i]._rot = _tree.rot(i);
+    uint cnt = 0;
+    for(ID i = 1; i<=Nblcks; ++i) {
+      uint min_wh = min(_W, _H);
+      if(_blcks[i]._w > min_wh || _blcks[i]._h > min_wh) {
+        ++cnt;
+        if(_blcks[i]._w > _W || _blcks[i]._h > _H) {
+          _blcks[i]._rot = true;
+          swap(_blcks[i]._w, _blcks[i]._h);
+          _tree.set_rot(i, true);
+        }
+      } else _rotable.push_back(i);
+    }
+    _rot_prob *= (1-float(cnt)/Nblcks);
     //reading input.nets
     _nets.reserve(_Nnets);
     for(ID i = 1; i<=_Nnets; ++i) {
@@ -46,43 +57,45 @@ public:
       net._blcks.reserve(deg);
       for(int j = 0; j<deg; ++j) {
         string name; fnets >> name;
-        net._blcks.push_back(_blcks_id[name]);
+        ID bid = _blcks_id[name];
+        net._blcks.push_back(bid);
+        if(bid > _Nblcks) net.update(_blcks[bid]._x, _blcks[bid]._y);
       }
     }
     fnets.close();
   }
   void init() {
-    if(has_init) return;
+    if(_has_init) return;
     _tree.init(_blcks);
-    has_init = true;
+    _has_init = true;
   }
   tuple<uint, uint, uint> cost() const {
-    assert(has_init);
-    uint hpwl = 0, MAX_X = 0, MAX_Y = 0;
+    assert(_has_init);
+    uint hpwl = 0;
+    LEN MAX_X = 0, MAX_Y = 0;
+    for(ID i = 1; i<=_Nblcks; ++i) {
+      MAX_X = max(MAX_X, _blcks[i]._x+_blcks[i]._w);
+      MAX_Y = max(MAX_Y, _blcks[i]._y+_blcks[i]._h);
+    }
     for(auto& net:_nets) {
-      LEN min_x, min_y, max_x, max_y;
-      min_x = min_y = (1<<(sizeof(LEN)*8-1));
-      max_x = max_y = 0;
-      for(auto& id:net._blcks) {
-        LEN x = _blcks[id]._x + (id<=_Nblcks ? _blcks[id]._w/2 : 0);
-        LEN y = _blcks[id]._y + (id<=_Nblcks ? _blcks[id]._h/2 : 0);
+      LEN min_x = net._mnx, min_y = net._mny; 
+      LEN max_x = net._mxx, max_y = net._mxy; 
+      for(auto& id:net._blcks) if(id <= _Nblcks) {
+        LEN x = _blcks[id]._x + _blcks[id]._w/2;
+        LEN y = _blcks[id]._y + _blcks[id]._h/2;
         min_x = min(min_x, x);
         max_x = max(max_x, x);
         min_y = min(min_y, y);
         max_y = max(max_y, y);
-        if(id <= _Nblcks) {
-          MAX_X = max(MAX_X, _blcks[id]._x+_blcks[id]._w);
-          MAX_Y = max(MAX_Y, _blcks[id]._y+_blcks[id]._h);
-        }
       }
       hpwl += ((max_x-min_x) + (max_y-min_y));
     }
     return {hpwl, MAX_X, MAX_Y};
   }
   void plot() const {
-    assert(has_init);
+    assert(_has_init);
     Gnuplot gp;
-    gp << "set xrange [0:" << _W*3 << "]\nset yrange [0:" << _H*3 << "]" << endl;
+    gp << "set xrange [0:" << _W*2 << "]\nset yrange [0:" << _H*2 << "]" << endl;
     for(uint i = 1; i<=_Nblcks; ++i) {
       const BLOCK& blck = _blcks[i];
       gp << "set object " << int(i) << " rect from " << int(blck._x) 
@@ -95,12 +108,14 @@ public:
        << " fc rgb \"red\" back" << endl;
     gp << "set nokey" << endl;
     gp << "set size ratio -1" << endl;
+    gp << "set style line 1 lc rgb \'#0060ad\' pt 6" << endl;
     gp << "plot '-' w p ls 1" << endl;
-    gp << "0 0" << endl;
-    gp << "pause -1" << endl;
+    for(uint i = _Nblcks+1; i<_blcks.size(); ++i)
+      gp << _blcks[i]._x << " " << _blcks[i]._y << endl;
+    gp << "e\n pause -1" << endl;
   }
   void output(ostream& out) const {
-    assert(has_init);
+    assert(_has_init);
     int width, height, hpwl; tie(hpwl, width, height) = cost();
     out << _alpha*width*height + (1-_alpha)*hpwl << endl;
     out << hpwl << endl;
@@ -114,12 +129,12 @@ public:
     }
   }
   void perturb() {
-    float p1 = randf();
-    float p2 = randf();
-    if(p1 < rot_prob) rotate();
-    else if(p2 < del_and_ins_prob) del_and_ins();
-    else swap_two_nodes();
-    has_init = false;
+    float p1 = randf(), p2 = randf(), p3 = randf();
+    if(p1 < _rot_prob) rotate();
+    else if(p2 < _del_and_ins_prob) del_and_ins();
+    else if(p3 < _swap_prob) swap_two_nodes();
+    else swap_children();
+    _has_init = false;
   }
   void restore(const TREE& tree) {
     _tree = tree;
@@ -127,7 +142,7 @@ public:
       swap(_blcks[i]._w, _blcks[i]._h);
       _blcks[i]._rot = _tree.rot(i);
     }
-    has_init = false;
+    _has_init = false;
   }
   const float _R() { return float(_H)/_W; }
   TREE get_tree() { return _tree; }
@@ -140,14 +155,13 @@ private:
       ifs >> name;
       if(len == 2) { string ign; ifs >> ign; }
       ifs >> w >> h;
-      //if(abs(float(w)/h-R) < abs(float(h)/w-R)) swap(w, h);
       m[name] = i;
       if(len == 1) vec.emplace_back(i, w, h, name);
       else vec.emplace_back(i, 0, 0, "", w, h);
     }
   }
   void rotate() {
-    ID id = (rand()%_Nblcks)+1;
+    ID id = _rotable[(rand()%_rotable.size())];
     _blcks[id]._rot = !_blcks[id]._rot;
     swap(_blcks[id]._w, _blcks[id]._h);
     _tree.rotate(id);
@@ -166,14 +180,18 @@ private:
     ID id2 = (id1+((rand()%(_Nblcks-1))+1))%_Nblcks;
     _tree.swap_two_nodes(id1+1, id2+1);
   }
-  double _alpha;
+  void swap_children() {
+    _tree.swap_children();
+  }
+  float _alpha, _rot_prob, _del_and_ins_prob, _swap_prob;
   uint _W, _H, _Nblcks, _Ntrmns, _Nnets;
   string _out_rpt;
   vector<BLOCK> _blcks;
   vector<NET> _nets;
   TREE _tree;
   map<string, ID> _blcks_id;
-  bool has_init;
+  bool _has_init;
+  vector<ID> _rotable;
 };
 template<typename ID, typename LEN> class FLOOR_PLAN<ID, LEN>::TREE {
 public:
@@ -185,7 +203,7 @@ public:
     for(ID i = 1; i<=Nblcks; ++i) {
       ID& id = _tree[i];
       _nodes[id]._id = id;
-      if(randb()) _nodes[id]._rot = true;
+      //if(randb()) _nodes[id]._rot = true;
       _nodes[id]._par = _tree[i/2];
       if(i*2 <= Nblcks) _nodes[id]._l = _tree[i*2];
       if(i*2+1 <= Nblcks) _nodes[id]._r = _tree[i*2+1];
@@ -262,6 +280,11 @@ public:
     }
     //if(do_swap) swap(_nodes[id]._l, _nodes[id]._r);
   }
+  void swap_children() {
+    ID id = rand()%(_nodes.size()-1);
+    while(!(_nodes[id]._l+_nodes[id]._r)) id = rand()%(_nodes.size()-1);
+    swap(_nodes[id]._l, _nodes[id]._r);
+  }
   void print() {
     ID rt = _nodes[0]._par;
     cerr << "root " << int(rt) << endl;
@@ -270,6 +293,7 @@ public:
            << " " << _nodes[i]._rot << endl;
   }
   bool rot(ID id) { return _nodes[id]._rot; }
+  void set_rot(ID id, bool rot) { _nodes[id]._rot = rot; }
 private:
   void dfs(ID id, ID par, list<ID>& cy, auto& cur, vector<BLOCK>& blcks) {
     if(_nodes[id]._l) {
@@ -358,8 +382,16 @@ template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::BLOCK {
   bool _rot;
 };
 template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NET {
-  NET(ID id) : _id(id) {};
+  NET(ID id) : _id(id), _mxx(0), _mxy(0), 
+               _mnx(1<<(sizeof(LEN)*8-1)), _mny(1<<(sizeof(LEN)*8-1)) {};
+  void update(LEN x, LEN y) {
+    _mxx = max(_mxx, x);
+    _mxy = max(_mxy, y);
+    _mnx = min(_mnx, x);
+    _mny = min(_mny, y);
+  }
   ID _id;
+  LEN _mxx, _mxy, _mnx, _mny;
   vector<ID> _blcks;
 };
 template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NODE {
