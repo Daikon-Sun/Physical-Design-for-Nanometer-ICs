@@ -9,10 +9,12 @@ using namespace std;
 
 clock_t start_time = clock();
 
+constexpr float temp_th = 0.03, rej_ratio = 0.99;
+
 inline float randf() { return float(rand())/RAND_MAX; }
 inline float randb() { return rand()%2; }
 
-typedef tuple<int, int, int> int3;
+typedef tuple<float, int, int> int3;
 
 #include "floor_plan.hpp"
 
@@ -70,7 +72,6 @@ public:
   };
   void run(const int k, const int rnd, const float c) {
     const int reset_th = 15*_Nblcks, stop_th = 30*_Nblcks;
-    constexpr float temp_th = 0.05, rej_ratio = 0.99;
     _fp.init();
     int iter = 1, tot_feas = 0;
     float _T = 2*_init_T, prv_cost = norm_cost(_fp.cost());
@@ -127,7 +128,7 @@ public:
     _fp.restore(_best_sol);
     _fp.init();
     int3 costs = _fp.cost();
-    int hpwl = get<0>(costs);
+    float hpwl = get<0>(costs);
     int area = get<1>(costs)*get<2>(costs);
     _best_cost = true_cost(hpwl, area);
     cerr << "     init_T: " << _init_T << '\n';
@@ -185,7 +186,7 @@ int main(int argc, char** argv) {
   fblcks >> ign >> W >> H;
   fblcks >> ign >> Nblcks;
   float P = 0.9, alpha_base = 0.5, beta = 0, R = float(H)/W;
-  int k = max(6, Nblcks/5), rnd = 9*Nblcks;
+  int k = max(7, Nblcks/5), rnd = 15*Nblcks;
   float c = max(150-int(Nblcks), 10);
   bool use_char = (Nblcks<<1) < CHAR_MAX;
   bool use_short = (max(W, H)<<3) < SHRT_MAX;
