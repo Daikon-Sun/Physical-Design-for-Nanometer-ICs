@@ -52,7 +52,7 @@ public:
     for(ID i = 1; i<=_N; ++i) {
       _fp.perturb();
       _fp.init();
-      costs[i] = _fp.cost(true, true);
+      costs[i] = _fp.cost();
       if(get<1>(costs[i]) <= _W && get<2>(costs[i]) <= _H) {
         ++_N_feas;
         _recs.push_back(true);
@@ -76,11 +76,11 @@ public:
       avg_cost += abs(norm_cost(costs[i]) - norm_cost(costs[i-1]));
     _init_T = -avg_cost/_N/logf(P);
   };
-  void run(const int k, const int rnd, const float c) {
+  void run(const int k, int rnd, const float c) {
     int reset_th = 2*_Nblcks, stop_th = 4*_Nblcks;
     _fp.init();
     int iter = 1, tot_feas = 0;
-    float _T = _init_T, prv_cost = norm_cost(_fp.cost());
+    float _T = _init_T, prv_cost = norm_cost(_fp.cost(_alpha, _beta));
     int rej_num = 0, cnt = 1;
     typename FLOOR_PLAN<ID, LEN>::TREE last_sol = _fp.get_tree();
     while(_T > temp_th || float(rej_num) <= rej_ratio*cnt || !tot_feas) {
@@ -101,8 +101,8 @@ public:
           _recs.push_back(true);
           ++tot_feas;
         } else _recs.push_back(false);
-
         _alpha = _alpha_base + (1-_alpha_base)*_N_feas/_N;
+
         if(delta_cost <= 0 || randf() < expf(-delta_cost/_T)) {
           prv_cost = cost;
           last_sol = _fp.get_tree();
@@ -126,17 +126,19 @@ public:
           _T = _init_T;
           iter = 1;
           cerr << "reseting1...\n";
-          reset_th += 3;
-          stop_th += 3;
+          reset_th += 1;
+          stop_th += 1;
+          rnd += 1;
         }
       } else if(iter > stop_th) break;
     }
     _fp.restore(_best_sol);
   }
-  void run2(const int k, const int rnd, const float c) {
+  void run2(const int k, int rnd, const float c) {
+    _init_T /= 30;
     vector<float> bests, ax, Ts;
     clock_t tt = clock();
-    int reset_th = 3*_Nblcks, stop_th = 7*_Nblcks;
+    int reset_th = 2*_Nblcks, stop_th = 9*_Nblcks;
     _fp.init();
     int iter = 1, tot_feas = 0;
     float _T = _init_T, prv_cost = true_cost(_fp.cost(), _avg_true);
@@ -153,13 +155,7 @@ public:
         float delta_cost = (cost - prv_cost);
         avg_delta_cost += abs(delta_cost);
 
-        if(*_recs.begin()) --_N_feas;
-        _recs.pop_front();
-        if(feas(costs)) {
-          ++_N_feas;
-          _recs.push_back(true);
-          ++tot_feas;
-        } else _recs.push_back(false);
+        if(feas(costs)) ++tot_feas;
 
         if(delta_cost <= 0 || randf() < expf(-delta_cost/_T)) {
           prv_cost = cost;
@@ -168,8 +164,11 @@ public:
             if(cost < _best_cost || tot_feas == 1) {
               _best_sol = _fp.get_tree();
               _best_cost = cost;
-              bests.push_back(_best_cost*_avg_true);
-              ax.push_back(clock()-tt);
+//#define PLOT_2D
+//#ifdef PLOT_2D
+//              bests.push_back(_best_cost*_avg_true);
+//              ax.push_back(clock()-tt);
+//#endif
             }
           }
         } else {
@@ -178,7 +177,6 @@ public:
         }
       }
       ++iter;
-      //_T = _init_T*avg_delta_cost/cnt/iter;
       Ts.push_back(_T);
       if(iter <= k) _T = _init_T*avg_delta_cost/cnt/iter/c;
       else _T = _init_T*avg_delta_cost/cnt/iter;
@@ -187,8 +185,9 @@ public:
         if(iter > reset_th) {
           _T = _init_T;
           iter = 1;
-          reset_th += 5;
-          stop_th += 5;
+          reset_th += 1;
+          stop_th += 1;
+          rnd += 1;
           cerr << "reseting2...\n";
         }
       } else if(iter > stop_th) break;
@@ -210,11 +209,11 @@ public:
     cerr << "       area: " << area << '\n';
     cerr << " total cost: " << _best_cost << '\n';
 //#ifdef PLOT_2D
-    int limit = 500000;
-    vector<int> axis(limit);
-    iota(axis.begin(), axis.end(), 1);
-    plot_2d<float, int>(Ts, axis, true, limit);
-    plot_2d<float, float>(bests, ax, false, limit);
+//    int limit = 500000;
+//    vector<int> axis(limit);
+//    iota(axis.begin(), axis.end(), 1);
+//    plot_2d<float, int>(Ts, axis, true, limit);
+//    plot_2d<float, float>(bests, ax, false, limit);
 //#endif
   }
 private:

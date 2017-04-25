@@ -132,7 +132,7 @@ public:
   void output(ostream& out) const {
     //assert(_has_init);
     int width, height, hpwl; tie(hpwl, width, height) = cost();
-    out << setprecision(10) << _alpha*width*height + (1-_alpha)*hpwl/2. << '\n';
+    out << setprecision(13) << _alpha*width*height + (1-_alpha)*hpwl/2. << '\n';
     out << hpwl/2. << '\n';
     out << width*height << '\n';
     out << width << " " << height << '\n';
