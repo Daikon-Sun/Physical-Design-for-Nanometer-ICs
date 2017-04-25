@@ -13,7 +13,7 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 
-extern clock_t start_time;
+extern const clock_t start_time;
 
 template<typename ID, typename LEN>
 class FLOOR_PLAN {
