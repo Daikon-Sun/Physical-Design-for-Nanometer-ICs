@@ -194,9 +194,6 @@ private:
     ID id2 = (id1+((rand()%(_Nblcks-1))+1))%_Nblcks;
     _tree.swap_two_nodes(id1+1, id2+1);
   }
-  void swap_children() {
-    _tree.swap_children();
-  }
   float _alpha, _rot_prob, _del_and_ins_prob;
   int _W, _H, _Nblcks, _Ntrmns, _Nnets;
   string _out_rpt;
@@ -451,21 +448,21 @@ template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NET {
   LEN _mxx, _mxy, _mnx, _mny;
   vector<ID> _blcks;
 };
-constexpr int msk_l = ((1<<10)-1)<<1;
-constexpr int msk_r = ((1<<10)-1)<<11;
-constexpr int msk_p = ((1<<10)-1)<<21;
-constexpr int rmsk_l = ~msk_l; 
-constexpr int rmsk_r = ~msk_r; 
-constexpr int rmsk_p = ~msk_p; 
+constexpr uint msk_l = ((1<<10)-1)<<1;
+constexpr uint msk_r = ((1<<10)-1)<<11;
+constexpr uint msk_p = ((1<<10)-1)<<21;
+constexpr uint rmsk_l = ~msk_l; 
+constexpr uint rmsk_r = ~msk_r; 
+constexpr uint rmsk_p = ~msk_p; 
 template<typename ID, typename LEN> struct FLOOR_PLAN<ID, LEN>::NODE {
   NODE() : x(0) {};
   ID _l() const { return (x>>01)&((1<<10)-1); }
   ID _r() const { return (x>>11)&((1<<10)-1); }
   ID _p() const { return (x>>21)&((1<<10)-1); }
   bool _rot() const { return x&1; }
-  void s_l(int i) { x = ((x&rmsk_l) | ((i<<01)&msk_l)); }
-  void s_r(int i) { x = ((x&rmsk_r) | ((i<<11)&msk_r)); }
-  void s_p(int i) { x = ((x&rmsk_p) | ((i<<21)&msk_p)); }
+  void s_l(const uint& i) { x = ((x&rmsk_l) | ((i<<01)&msk_l)); }
+  void s_r(const uint& i) { x = ((x&rmsk_r) | ((i<<11)&msk_r)); }
+  void s_p(const uint& i) { x = ((x&rmsk_p) | ((i<<21)&msk_p)); }
   void s_rot() { x ^= 1; }
   int x;
 };

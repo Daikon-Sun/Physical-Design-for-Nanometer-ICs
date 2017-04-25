@@ -84,6 +84,7 @@ public:
     int rej_num = 0, cnt = 1;
     typename FLOOR_PLAN<ID, LEN>::TREE last_sol = _fp.get_tree();
     while(_T > temp_th || float(rej_num) <= rej_ratio*cnt || !tot_feas) {
+      if(tot_feas) _beta += 0.01;
       float avg_delta_cost = 0;
       rej_num = 0, cnt = 1;
       for(; cnt<=rnd; ++cnt) {
@@ -138,7 +139,7 @@ public:
     _init_T /= 30;
     vector<float> bests, ax, Ts;
     clock_t tt = clock();
-    int reset_th = 2*_Nblcks, stop_th = 9*_Nblcks;
+    int reset_th = 2*_Nblcks, stop_th = 9*_Nblcks, reset_cnt = 0;
     _fp.init();
     int iter = 1, tot_feas = 0;
     float _T = _init_T, prv_cost = true_cost(_fp.cost(), _avg_true);
@@ -181,13 +182,12 @@ public:
       if(iter <= k) _T = _init_T*avg_delta_cost/cnt/iter/c;
       else _T = _init_T*avg_delta_cost/cnt/iter;
       _fp.init();
+      if(reset_cnt > _Nblcks/4) break;
       if(!tot_feas) {
         if(iter > reset_th) {
           _T = _init_T;
           iter = 1;
-          reset_th += 1;
-          stop_th += 1;
-          rnd += 1;
+          ++reset_th, ++stop_th, ++rnd, ++reset_cnt;
           cerr << "reseting2...\n";
         }
       } else if(iter > stop_th) break;
@@ -255,7 +255,7 @@ int main(int argc, char** argv) {
   fblcks >> ign >> W >> H;
   fblcks >> ign >> Nblcks;
   float P = 0.9, alpha_base = 0.5, beta = 0, R = float(H)/W;
-  int k = max(3, Nblcks/11), rnd = 3*Nblcks+15;
+  int k = max(5, Nblcks/11), rnd = 2*Nblcks+10;
   float c = max(90-int(Nblcks), 10);
   bool use_char = (Nblcks<<2) < CHAR_MAX;
   bool use_short = (max(W, H)<<4) < SHRT_MAX;
