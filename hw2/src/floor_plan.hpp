@@ -207,6 +207,7 @@ private:
 };
 template<typename ID, typename LEN> class FLOOR_PLAN<ID, LEN>::TREE {
 public:
+  TREE() {};
   TREE(ID Nblcks) {
     vector<ID> _tree(Nblcks+1);
     iota(_tree.begin()+1, _tree.end(), 1);
@@ -303,14 +304,14 @@ public:
     for(ID i = 1; i<_nodes.size(); ++i) {
       if(_nodes[i]._l()) {
         const ID& l = _nodes[i]._l();
-        gp << "set arrow " << int(cnt++) << " from " << blcks[i]._x+blcks[i]._w/2
+        gp << "set arrow " << int(cnt++) << " from " <<blcks[i]._x+blcks[i]._w/2
            << "," << blcks[i]._y+blcks[i]._h/2 << " to "
            << blcks[l]._x+blcks[l]._w/2 << "," << blcks[l]._y+blcks[l]._h/2
            << " nohead front\n";
       }
       if(_nodes[i]._r()) {
         const ID& r = _nodes[i]._r();
-        gp << "set arrow " << int(cnt++) << " from " << blcks[i]._x+blcks[i]._w/2
+        gp << "set arrow " << int(cnt++) << " from " <<blcks[i]._x+blcks[i]._w/2
            << "," << blcks[i]._y+blcks[i]._h/2 << " to "
            << blcks[r]._x+blcks[r]._w/2 << "," << blcks[r]._y+blcks[r]._h/2
            << " nohead front\n";

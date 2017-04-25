@@ -53,10 +53,6 @@ public:
       _fp.perturb();
       _fp.init();
       costs[i] = _fp.cost();
-      if(get<1>(costs[i]) <= _W && get<2>(costs[i]) <= _H) {
-        ++_N_feas;
-        _recs.push_back(true);
-      } else _recs.push_back(false);
       const float area = get<1>(costs[i])*get<2>(costs[i]);
       const float hpwl = get<0>(costs[i])/2.;
       _avg_hpwl += hpwl;
@@ -77,6 +73,9 @@ public:
     _init_T = -avg_cost/_N/logf(P);
   };
   void run(const int k, int rnd, const float c) {
+    _recs.resize(_N, false);
+    _N_feas = 0;
+    _beta = 0.0;
     int reset_th = 2*_Nblcks, stop_th = 4*_Nblcks;
     _fp.init();
     int iter = 1, tot_feas = 0;
@@ -135,15 +134,15 @@ public:
     }
     _fp.restore(_best_sol);
   }
-  void run2(const int k, int rnd, const float c) {
-    _init_T /= 30;
+  pair<float, typename FLOOR_PLAN<ID, LEN>::TREE>
+  run2(const int k, int rnd, const float c) {
+    float _init_T2 = _init_T /50;
     vector<float> bests, ax, Ts;
     clock_t tt = clock();
     int reset_th = 2*_Nblcks, stop_th = 9*_Nblcks, reset_cnt = 0;
+    int iter = 1, tot_feas = 0, rej_num = 0, cnt = 1;
     _fp.init();
-    int iter = 1, tot_feas = 0;
-    float _T = _init_T, prv_cost = true_cost(_fp.cost(), _avg_true);
-    int rej_num = 0, cnt = 1;
+    float _T = _init_T2, prv_cost = true_cost(_fp.cost(), _avg_true);
     typename FLOOR_PLAN<ID, LEN>::TREE last_sol = _best_sol;
     while(_T > temp_th || float(rej_num) <= rej_ratio*cnt || !tot_feas) {
       float avg_delta_cost = 0;
@@ -179,13 +178,13 @@ public:
       }
       ++iter;
       Ts.push_back(_T);
-      if(iter <= k) _T = _init_T*avg_delta_cost/cnt/iter/c;
-      else _T = _init_T*avg_delta_cost/cnt/iter;
+      if(iter <= k) _T = _init_T2*avg_delta_cost/cnt/iter/c;
+      else _T = _init_T2*avg_delta_cost/cnt/iter;
       _fp.init();
-      if(reset_cnt > _Nblcks/4) break;
+      if(reset_cnt > _Nblcks/7+1) break;
       if(!tot_feas) {
         if(iter > reset_th) {
-          _T = _init_T;
+          _T = _init_T2;
           iter = 1;
           ++reset_th, ++stop_th, ++rnd, ++reset_cnt;
           cerr << "reseting2...\n";
@@ -208,6 +207,7 @@ public:
     cerr << "       hpwl: " << hpwl << '\n';
     cerr << "       area: " << area << '\n';
     cerr << " total cost: " << _best_cost << '\n';
+    return {_best_cost, _best_sol};
 //#ifdef PLOT_2D
 //    int limit = 500000;
 //    vector<int> axis(limit);
@@ -244,7 +244,6 @@ private:
 int main(int argc, char** argv) {
   ios_base::sync_with_stdio(false);
   cin.tie(0);
-  assert(argc <= 6);
   srand(time(NULL));
   ifstream fblcks(argv[2], ifstream::in);
   ifstream fnets(argv[3], ifstream::in);
@@ -255,33 +254,53 @@ int main(int argc, char** argv) {
   fblcks >> ign >> W >> H;
   fblcks >> ign >> Nblcks;
   float P = 0.9, alpha_base = 0.5, beta = 0, R = float(H)/W;
-  int k = max(5, Nblcks/11), rnd = 2*Nblcks+10;
-  float c = max(90-int(Nblcks), 10);
+  int k = max(2, Nblcks/11), rnd = 2*Nblcks+20;
+  float c = max(80-int(Nblcks), 10), costs[2];
   bool use_char = (Nblcks<<2) < CHAR_MAX;
   bool use_short = (max(W, H)<<4) < SHRT_MAX;
   if(use_char && use_short) {
     auto fp = FLOOR_PLAN<char,short>(fnets, fblcks, argv, Nnets, Nblcks, W, H);
     auto sa = SA<char, short>(fp, argv, Nblcks, W, H, R, P, alpha_base, beta); 
-    sa.run(k, rnd, c);
-    sa.run2(k, rnd, c);
+    FLOOR_PLAN<char, short>::TREE trees[2];
+    for(int i = 0; i<2; ++i) {
+      sa.run(k, rnd, c);
+      tie(costs[i], trees[i]) = sa.run2(k, rnd, c);
+    }
+    fp.restore(costs[0]<costs[1] ? trees[0] : trees[1]);
+    fp.init();
     fp.output(outs);
   } else if(use_char && !use_short) {
     auto fp = FLOOR_PLAN<char, int>(fnets, fblcks, argv, Nnets, Nblcks, W, H);
     auto sa = SA<char, int>(fp, argv, Nblcks, W, H, R, P, alpha_base, beta); 
-    sa.run(k, rnd, c);
-    sa.run2(k, rnd, c);
+    FLOOR_PLAN<char, int>::TREE trees[2];
+    for(int i = 0; i<2; ++i) {
+      sa.run(k, rnd, c);
+      tie(costs[i], trees[i]) = sa.run2(k, rnd, c);
+    }
+    fp.restore(costs[0]<costs[1] ? trees[0] : trees[1]);
+    fp.init();
     fp.output(outs);
   } else if(!use_char && use_short) {
     auto fp = FLOOR_PLAN<short,short>(fnets, fblcks, argv,Nnets, Nblcks, W, H);
     auto sa = SA<short, short>(fp, argv, Nblcks, W, H, R, P, alpha_base, beta); 
-    sa.run(k, rnd, c);
-    sa.run2(k, rnd, c);
+    FLOOR_PLAN<short, short>::TREE trees[2];
+    for(int i = 0; i<2; ++i) {
+      sa.run(k, rnd, c);
+      tie(costs[i], trees[i]) = sa.run2(k, rnd, c);
+    }
+    fp.restore(costs[0]<costs[1] ? trees[0] : trees[1]);
+    fp.init();
     fp.output(outs);
   } else if(!use_char && !use_short) {
     auto fp = FLOOR_PLAN<short, int>(fnets, fblcks, argv, Nnets, Nblcks, W, H);
     auto sa = SA<short, int>(fp, argv, Nblcks, W, H, R, P, alpha_base, beta); 
-    sa.run(k, rnd, c);
-    sa.run2(k, rnd, c);
+    FLOOR_PLAN<short, int>::TREE trees[2];
+    for(int i = 0; i<2; ++i) {
+      sa.run(k, rnd, c);
+      tie(costs[i], trees[i]) = sa.run2(k, rnd, c);
+    }
+    fp.restore(costs[0]<costs[1] ? trees[0] : trees[1]);
+    fp.init();
     fp.output(outs);
   }
   outs.close();
