@@ -23,13 +23,12 @@ public:
   struct NODE;
   class TREE;
   FLOOR_PLAN(ifstream& fnets, ifstream& fblcks, char** argv,
-             int Nnets, int Nblcks, int W, int H) 
-    : _out_rpt(argv[4]), _Nnets(Nnets), _Nblcks(Nblcks),
+             int Nnets, int Nblcks, int Ntrmns, int W, int H) 
+    : _out_rpt(argv[4]), _Nnets(Nnets), _Nblcks(Nblcks), _Ntrmns(Ntrmns),
       _tree(Nblcks), _W(W), _H(H), _alpha(stof(argv[1])), _has_init(false),
       _rot_prob(0.3), _del_and_ins_prob(0.5) {
     //reading input.block
     string ign;
-    fblcks >> ign >> _Ntrmns;
     _blcks.resize(1, {0, 0, 0, "NULL"});
     read_in(_blcks, fblcks, _blcks_id, _Nblcks, 1);
     read_in(_blcks, fblcks, _blcks_id, _Ntrmns, 2);
@@ -78,7 +77,7 @@ public:
         MAX_X = max(MAX_X, LEN(_blcks[i]._x+_blcks[i]._w));
         MAX_Y = max(MAX_Y, LEN(_blcks[i]._y+_blcks[i]._h));
       }
-      if(!get_hpwl) return {1, MAX_X, MAX_Y};
+      if(!get_hpwl) return make_tuple(1, MAX_X, MAX_Y);
     }
     int hpwl = 0;
     for(auto& net:_nets) {
@@ -104,12 +103,12 @@ public:
       }
       hpwl += (max_x-min_x+max_y-min_y);
     }
-    return {hpwl, MAX_X, MAX_Y};
+    return make_tuple(hpwl, MAX_X, MAX_Y);
   }
   void plot() const {
     //assert(_has_init);
     Gnuplot gp;
-    gp << "set xrange [0:" << _W+500 << "]\nset yrange [0:" << _H+500 << "]\n";
+    gp << "set xrange [0:" << 1.8*_W << "]\nset yrange [0:" << 1.8*_H << "]\n";
     for(ID i = 1; i<=_Nblcks; ++i) {
       const BLOCK& blck = _blcks[i];
       gp << "set object " << int(i) << " rect from " << int(blck._x) 
@@ -321,7 +320,8 @@ public:
   bool rot(ID id) const { return _nodes[id]._rot(); }
   void set_rot(ID id) { _nodes[id].s_rot(); }
 private:
-  void dfs(ID id, ID p, list<ID>& cy, auto& cur, vector<BLOCK>& blcks) {
+  void dfs(ID id, ID p, list<ID>& cy, typename list<ID>::iterator& cur,
+           vector<BLOCK>& blcks) {
     if(_nodes[id]._l()) {
       const ID& p = _nodes[id]._l();
       blcks[p]._x = blcks[id]._x + blcks[id]._w;
@@ -336,7 +336,8 @@ private:
       dfs(_nodes[id]._r(), id, cy, cur, blcks);
     }
   }
-  LEN find_max_y(list<ID>& l, auto& cur, vector<BLOCK>& blcks, BLOCK& blck) {
+  LEN find_max_y(list<ID>& l, typename list<ID>::iterator& cur,
+                 vector<BLOCK>& blcks, BLOCK& blck) {
     LEN y = 0;
     auto it = cur, rit = cur, mit = cur;
     while(it != l.end() && blcks[*it]._x < blck._x+blck._w) {

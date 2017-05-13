@@ -1,0 +1,54 @@
+sqrt(x^2 + y^2)
+Benchmark: ibm01-cu85 total displacement: 7.87565e+06
+Benchmark: ibm02-cu90 total displacement: 1.15991e+07
+Benchmark: ibm07-cu90 total displacement: 3.82769e+07
+Benchmark: ibm08-cu90 total displacement: 3.95455e+07
+Benchmark: ibm09-cu90 total displacement: 6.25097e+07
+all search sqrt(x^2 + y^2)
+Benchmark: ibm01-cu85 total displacement: 8.55244e+06
+Benchmark: ibm02-cu90 total displacement: 1.2547e+07
+Benchmark: ibm07-cu90 total displacement: 4.18757e+07
+Benchmark: ibm08-cu90 total displacement: 4.27898e+07
+Benchmark: ibm09-cu90 total displacement: 6.71787e+07
+abs(x) + abs(y)
+Benchmark: ibm01-cu85 total displacement: 7.28551e+06
+Benchmark: ibm02-cu90 total displacement: 1.13562e+07
+Benchmark: ibm07-cu90 total displacement: 3.7328e+07
+Benchmark: ibm08-cu90 total displacement: 3.86093e+07
+Benchmark: ibm09-cu90 total displacement: 6.05497e+07
+abs(x) + 1.5*abs(y)
+Benchmark: ibm01-cu85 total displacement: 8.19376e+06
+Benchmark: ibm02-cu90 total displacement: 1.23756e+07
+Benchmark: ibm07-cu90 total displacement: 4.17241e+07
+Benchmark: ibm08-cu90 total displacement: 4.2996e+07
+Benchmark: ibm09-cu90 total displacement: 6.80876e+07
+abs(x) + 1.1*abs(y)
+Benchmark: ibm01-cu85 total displacement: 7.45074e+06
+Benchmark: ibm02-cu90 total displacement: 1.14937e+07
+Benchmark: ibm07-cu90 total displacement: 3.77979e+07
+Benchmark: ibm08-cu90 total displacement: 3.95306e+07
+Benchmark: ibm09-cu90 total displacement: 6.18228e+07
+abs(x) + 0.9*abs(y)
+Benchmark: ibm01-cu85 total displacement: 7.2914e+06
+Benchmark: ibm02-cu90 total displacement: 1.13793e+07
+Benchmark: ibm07-cu90 total displacement: 3.67355e+07
+Benchmark: ibm08-cu90 total displacement: 3.84679e+07
+Benchmark: ibm09-cu90 total displacement: 6.01439e+07
+abs(x) + 0.8*abs(y)
+Benchmark: ibm01-cu85 total displacement: 7.2893e+06
+Benchmark: ibm02-cu90 total displacement: 1.1144e+07
+Benchmark: ibm07-cu90 total displacement: 3.65893e+07
+Benchmark: ibm08-cu90 total displacement: 3.79822e+07
+Benchmark: ibm09-cu90 total displacement: 5.99612e+07
+abs(x) + 0.7*abs(y)
+Benchmark: ibm01-cu85 total displacement: 7.24338e+06
+Benchmark: ibm02-cu90 total displacement: 1.10741e+07
+Benchmark: ibm07-cu90 total displacement: 3.65286e+07
+Benchmark: ibm08-cu90 total displacement: 3.79396e+07
+Benchmark: ibm09-cu90 total displacement: 6.02721e+07
+abs(x) + 0.6*abs(y)
+Benchmark: ibm01-cu85 total displacement: 7.23696e+06
+Benchmark: ibm02-cu90 total displacement: 1.13397e+07
+Benchmark: ibm07-cu90 total displacement: 3.64199e+07
+Benchmark: ibm08-cu90 total displacement: 3.8158e+07
+Benchmark: ibm09-cu90 total displacement: 6.03318e+07

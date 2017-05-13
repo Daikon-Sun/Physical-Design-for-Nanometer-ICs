@@ -1,0 +1,87 @@
+Outline: 9912 5262
+NumBlocks: 9
+NumTerminals: 73
+
+cc_11 	3146	1826
+cc_12 	3146	1826
+cc_13 	3146	1826
+cc_14 	3146	1826
+cc_21 	3186	1832
+cc_22 	3186	1832
+cc_23 	3186	1832
+cc_24 	3186	1832
+clk 		826 	286
+
+new0 terminal     0	2500         
+new1 terminal     0	2900         
+new2 terminal     0	3300         
+new3 terminal     0	3700         
+new4 terminal     0	4100         
+new5 terminal     0	4500         
+new6 terminal     0	4900         
+new7 terminal     0	5300         
+new8 terminal     0	5700         
+new10 terminal    0	6100       
+new11 terminal    0	6500       
+new12 terminal    0	6900       
+new14 terminal    0	7300       
+new15 terminal    0	7700       
+new16 terminal    0	8100       
+new17 terminal    0	8500       
+new18 terminal    0	8900       
+VSS terminal      0	9300         
+new19 terminal    1700	0      
+new20 terminal    2100	0      
+new21 terminal    2500	0      
+new22 terminal    2900	0      
+new28 terminal    3300	0      
+new29 terminal    3700	0      
+new30 terminal    4100	0      
+new31 terminal    4500	0      
+new32 terminal    4900	0      
+new33 terminal    5300	0      
+new39 terminal    5700	0      
+new40 terminal    6100	0      
+new41 terminal    6500	0      
+new42 terminal    6900	0      
+new43 terminal    7300	0      
+new44 terminal    7700	0      
+new46 terminal    8100	0      
+new50 terminal    8500	0      
+VDD terminal      8900	0        
+new51 terminal    10500	2500   
+new52 terminal    10500	2900   
+new54 terminal    10500	3300   
+new55 terminal    10500	3700   
+new56 terminal    10500	4100   
+new57 terminal    10500	4500   
+new58 terminal    10500	4900   
+new59 terminal    10500	5300   
+new60 terminal    10500	5700   
+new62 terminal    10500	6100   
+new63 terminal    10500	6500   
+new64 terminal    10500	6900   
+new65 terminal    10500	7300   
+new66 terminal    10500	7700   
+new67 terminal    10500	8100   
+new69 terminal    10500	8500   
+new70 terminal    10500	8900   
+GND terminal      10500	9300     
+new71 terminal    1700	10500  
+new72 terminal    2100	10500  
+new73 terminal    2500	10500  
+new74 terminal    2900	10500  
+new75 terminal    3300	10500  
+new76 terminal    3700	10500  
+new77 terminal    4100	10500  
+new78 terminal    4500	10500  
+new79 terminal    4900	10500  
+new80 terminal    5300	10500  
+new81 terminal    5700	10500  
+new82 terminal    6100	10500  
+new83 terminal    6500	10500  
+new84 terminal    6900	10500  
+new85 terminal    7300	10500  
+new86 terminal    7700	10500  
+Phi terminal      8100	10500    
+TestHS1 terminal  8500	10500

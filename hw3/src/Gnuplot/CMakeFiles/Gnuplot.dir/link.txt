@@ -1,0 +1,2 @@
+/usr/bin/ar qc libGnuplot.a  CMakeFiles/Gnuplot.dir/GnuplotLivePlotter.cpp.o CMakeFiles/Gnuplot.dir/GnuplotMatrixPlotter.cpp.o CMakeFiles/Gnuplot.dir/GnuplotPlotter.cpp.o
+/usr/bin/ranlib libGnuplot.a

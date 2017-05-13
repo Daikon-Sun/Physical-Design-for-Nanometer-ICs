@@ -1,0 +1,1 @@
+/usr/bin/c++    -std=c++11 -O3   CMakeFiles/main.dir/src/main.cpp.o  -o main -rdynamic -lboost_iostreams -lboost_system -lboost_filesystem -lboost_regex 

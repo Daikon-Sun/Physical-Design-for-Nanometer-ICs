@@ -1,0 +1,50 @@
+Outline: 600 1200 
+NumBlocks: 30                                                                   
+NumTerminals: 3
+
+
+bk1 100  300
+bk2 200  100
+bk3 200  100
+bk4 300  100
+bk5 200  100
+
+bk1a 100  300
+bk2a 200  100
+bk3a 200  100
+bk4a 300  100
+bk5a 200  100
+
+bk1b 100  300
+bk2b 200  100
+bk3b 200  100
+bk4b 300  100
+bk5b 200  100
+
+bk1c 100  300
+bk2c 200  100
+bk3c 200  100
+bk4c 300  100
+bk5c 200  100
+
+
+abk1 100  300
+abk2 200  100
+abk3 200  100
+abk4 300  100
+abk5 200  100
+
+abk1a 100  300
+abk2a 200  100
+abk3a 200  100
+aabk4a 300  100
+abk5a 200  100
+
+
+
+
+
+
+VSS terminal         1281	1463 
+VDD terminal         1687	0    
+P9 terminal          266	0       

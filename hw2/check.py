@@ -98,16 +98,17 @@ for j, net in enumerate(nets):
   hpwl += (mx_x-mn_x+mx_y-mn_y)
 
 area = max_x*max_y
-ccost = float(sys.argv[3])*area+(1-float(sys.argv[3]))*hpwl/2
 
 print("#"*90)
 print("           input: {}".format(sys.argv[1]))
 print("   num of blocks: {}".format(len(blocks)))
 print("num of terminals: {}".format(len(terminals)))
 print("     num of nets: {}".format(len(nets)))
+print("            area: {}".format(area))
 print(" area difference: {}".format((area-chip_area)/area))
+print("            hpwl: {}".format(hpwl/2))
 print(" hpwl difference: {}".format((hpwl/2-wirelength)/hpwl/2))
-print(" cost difference: {}".format((cost-ccost)/cost))
+print("      total cost: {}".format((hpwl/2+area)/2))
 print("            SAME" if same else
       "       DIFFERENT")
 print("           LEGAL" if good else

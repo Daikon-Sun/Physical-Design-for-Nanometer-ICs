@@ -1,0 +1,61 @@
+Outline: 3866 2646
+NumBlocks: 11                                                                             
+NumTerminals: 45
+
+clkc  1036  462
+clkd  378   700
+cmp1  980   210
+cmp2  980   210
+cmp3  980   210
+cntd  3304  546
+cntu  3304  546
+npd   2016  252
+nps   3080  462
+ppd   2016  252
+pps   3080  462
+
+bu7 terminal        4648	4200  
+rs2 terminal        4312	4200  
+mcu terminal        3612	4200  
+bu0 terminal        3136	4200  
+bu1 terminal        2912	4200  
+bu2 terminal        2688	4200  
+bu3 terminal        2464	4200  
+bu4 terminal        2072	4200  
+bu5 terminal        1848	4200  
+bu6 terminal        1792	4200  
+gnd1 terminal       1064	4200  
+vin1 terminal       728	4200    
+mc1 terminal        0	2772      
+vin terminal        0	2100      
+vssa terminal       0	1722      
+vdda terminal       0	1680      
+busa8 terminal      4928	2702
+busa7 terminal      4928	2674
+busa6 terminal      4928	2646
+busa5 terminal      4928	2618
+busa4 terminal      4928	2590
+busa3 terminal      4928	2562
+busa2 terminal      4928	2534
+busa1 terminal      4928	2506
+mk1 terminal        4928	2478  
+vdd terminal        4928	2100  
+vss terminal        4928	1764  
+mc2 terminal        4928	1428  
+mk2 terminal        4928	630   
+mcd terminal        4480	0     
+rs1 terminal        4200	0     
+busb4 terminal      3556	0   
+busb3 terminal      3528	0   
+busb2 terminal      3500	0   
+busb1 terminal      3472	0   
+b0 terminal         2884	0       
+b1 terminal         2660	0       
+b2 terminal         2464	0       
+b3 terminal         2240	0       
+b4 terminal         2044	0       
+b5 terminal         1820	0       
+b6 terminal         1624	0       
+b7 terminal         1400	0       
+gnd2 terminal       700	0       
+vin2 terminal       364	0       
