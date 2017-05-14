@@ -14,18 +14,19 @@ class Module {
  public:
   enum Orient {OR_N, OR_W, OR_S, OR_E, OR_FN, OR_FW, OR_FS, OR_FE};
 
-  Module(string name = "" , double width = -1, double height = -1, 
+  Module(const string& name = "" , double width = -1, double height = -1, 
          bool isFixed = false)
     : _name(name), _x(-1), _y(-1), _width(width), _height(height),
       _isFixed(isFixed), _orient(OR_N) {}
+  Module(const double& x) : _x(x), _width(0) {}
   /////////////////////////////////////////////
   // get
   /////////////////////////////////////////////
   const string& name() {return _name;}
   const double& x() const {return _x;} //x coordinates
   const double& y() const {return _y;} //y coordinates //(x,y): lower-left point of the block
-  const double& width() {return _width;}
-  const double& height() {return _height;}
+  const double& width() const {return _width;}
+  const double& height() const {return _height;}
   const bool& isFixed() {return _isFixed;} //if fixed module, return true
 
   double centerX() {return _x + _width/2;}
@@ -92,7 +93,7 @@ class Module {
   void setNumPins(unsigned numPins) {_pPins.resize(numPins);}
   void addPin(Pin *pPin) {_pPins.push_back(pPin);}
   void clearPins() {_pPins.clear();}
-  double weight() { return 1.0/_width; }
+  double weight() { return 1; }
  private:
   // variables from benchmark input
   string _name;

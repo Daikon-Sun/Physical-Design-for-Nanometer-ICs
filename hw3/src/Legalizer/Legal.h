@@ -20,6 +20,8 @@ class CLegal {
   //GnuplotLivePlotter gnuplotLivePlotter;
   //Solve the legalization, "true" indicates success
   bool solve();
+  bool abacus();
+  bool mysolve();
   //Check the legalization result is overlap-free, within boundary, and on-site, "true" indicates legal
   bool check();
   void saveGlobalResult();

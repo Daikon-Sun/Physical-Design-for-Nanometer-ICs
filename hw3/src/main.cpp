@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
   Placement placement;
   placement.readBookshelfFormat(param.auxFilename , param.plFilename);
 
-  cout << "Benchmark: " << placement.name() << endl;
+  cerr << "Benchmark: " << placement.name() << endl;
 
   //cout << format("Memory usage: %.1f MB", getCurrentMemoryUsage()) << endl;
   //cout << format("Core region: (%.f,%.f)-(%.f,%.f)",

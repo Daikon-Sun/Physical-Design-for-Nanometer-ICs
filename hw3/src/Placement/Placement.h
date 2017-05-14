@@ -79,6 +79,11 @@ class Placement {
     _pins.push_back(pin),_pins.back().setPinId(_pins.size());
   }
   void addRow(const Row &row) {_rows.push_back(row);}
+  void addDummyModule() {
+    _modules.push_back(boundaryLeft());
+    _modules.push_back(boundaryRight());
+  }
+  void removeDummyModule() { _modules.pop_back(); _modules.pop_back(); }
 
   void setNumModules(unsigned size) {_modules.resize(size);}
   void setNumNets(unsigned size) {_nets.resize(size);}

@@ -12,69 +12,167 @@
 #include <set>
 using namespace std;
 
-bool CLegal::solve() {
-  saveGlobalResult();
+inline void smooth(vector<double>& v) {
+  vector<double> nv(v);
+  nv[0] = (3*v[0] + v[1]) / 4;
+  nv.back() = (3*v.back() + v[v.size()-2]) / 4;
+  for(size_t i = 1; i+1<nv.size(); ++i)
+    nv[i] = (v[i-1] + 2*v[i] + v[i+1]) / 4;
+  v = nv;
+}
+bool CLegal::mysolve() {
+  const double& bott_bound = _placement.boundaryBottom();
+  const double& left_bound = _placement.boundaryLeft();
+  const double& righ_bound = _placement.boundaryRight();
+  const double& rowHeight = _placement.getRowHeight();
+  const int&& nMods = _placement.numModules();
+  const int&& nRows = _placement.numRows();
+  double b_tot = 0, r_tot = nRows * _placement.row(0).width();
+  for(const auto& mod_id : _modules) b_tot += _placement.module(mod_id).width();
+  double ratio = b_tot / r_tot;
+
+  vector<double> rcnt(nRows);
+  for(const auto& mod_id : _modules) {
+    const auto& mod = _placement.module(mod_id);
+    int&& id = (mod.y() - bott_bound + 1e-9) / rowHeight;
+    double&& mid = (id+1) * rowHeight + bott_bound;
+    rcnt[id] += (mid - mod.y()) * mod.width();
+    if(id+1 < nRows) rcnt[id+1] += (mod.y()+mod.height() - mid) * mod.width();
+  }
+  double&& tot = _placement.row(0).width() * rowHeight;
+
+  while(*max_element(rcnt.begin(), rcnt.end()) > 0.95*tot) smooth(rcnt);
+
+  sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
+         return _placement.module(m1).y() < _placement.module(m2).y();});
+  vector<vector<int>> cntxt(nRows);
+  int pos = 0;
+  cntxt[pos].push_back(nMods);
+  vector<double> spaces(nRows);
+  for(const auto& mod_id : _modules) {
+    const auto& mod = _placement.module(mod_id);
+    double&& mod_area = mod.width() * mod.height();
+    if(spaces[pos]+mod_area >= rcnt[pos]*1.01) {
+      cntxt[pos].push_back(nMods + 1);
+      ++pos;
+      cntxt[pos].push_back(nMods);
+    }
+    assert(pos < nRows);
+    spaces[pos] += mod_area;
+    cntxt[pos].push_back(mod_id);
+  }
+  cntxt[pos].push_back(nMods + 1);
+  for(auto& s : spaces) s /= rowHeight;
+
+  _placement.addDummyModule();
+
+  for(auto& v : cntxt)
+    sort(v.begin()+1, v.end()-1, [this](int& m1, int& m2) {
+           return _placement.module(m1).x() < _placement.module(m2).x();});
+  int tcnt = 0;
+  for(auto& v : cntxt) {
+    assert(!v.empty());
+    tcnt += v.size()-2;
+  }
+
+  for(size_t i = 0; i<cntxt.size(); ++i) if(!cntxt[i].empty()) {
+    const double& rY = _placement.row(i).y();
+    auto& v = cntxt[i];
+    for(size_t j = 1; (j+1)*2 <= v.size(); ++j) {
+      auto& m1 = _placement.module(v[j-1]);
+      if(j == 1) assert(m1.x() == left_bound);
+      auto& m2 = _placement.module(v[j]);
+      auto& m3 = _placement.module(v[v.size()-j-1]);
+      auto& m4 = _placement.module(v[v.size()-j]);
+      if(j == 1) assert(m4.x() == righ_bound);
+      m2.setY(rY);
+      m3.setY(rY);
+      if(m1.x()+m1.width() > m2.x()) m2.setX(m1.x()+m1.width());
+      if(m3.x()+m3.width() > m4.x()) m3.setX(m4.x()-m3.width());
+      if(spaces[i] > m3.x() + m3.width() - m2.x()) {
+        double&& diff = spaces[i]-m3.x()-m3.width()+m2.x();
+        double&& lspace = m2.x() - m1.x() - m1.width();
+        double&& rspace = m4.x() - m3.x() - m3.width();
+        assert(lspace+rspace >= diff-1e-9);
+        if(lspace <= 0.0) m3.setX(m3.x() + diff);
+        else if(rspace <= 0.0) m2.setX(m2.x() - diff);
+        else {
+          double&& ratio = lspace / rspace;
+          m2.setX(m2.x() - diff * ratio / (1+ratio));
+          m3.setX(m3.x() + diff / (1+ratio));
+        }
+      }
+      spaces[i] -= (m2.width() + m3.width());
+    }
+    if(v.size()%2 == 1) {
+      int&& mid = (v.size()-1)/2;
+      auto& m1 = _placement.module(v[mid-1]);
+      auto& m2 = _placement.module(v[mid]);
+      auto& m3 = _placement.module(v[mid+1]);
+      if(m1.x()+m1.width() >= m2.x()) m2.setX(m1.x()+m1.width());
+      else if(m2.x()+m2.width() >= m3.x())
+        m2.setX(m3.x()-m2.width());
+      m2.setY(rY);
+    }
+  }
+  _placement.removeDummyModule();
+}
+bool CLegal::abacus() {
   const double& bott_bound = _placement.boundaryBottom();
   const double& rowHeight = _placement.getRowHeight();
   const int&& nRows = _placement.numRows();
-  double b_tot = 0, r_tot = nRows * _placement.row(0).width();
-  sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
-         return _placement.module(m1).y() < _placement.module(m2).y();
-  for(const auto& mod_id : _modules) b_tot += _placement.module(mod_id).width();
-  //GnuplotLivePlotter glp;
-  //cerr << "  row total width = " << r_tot << endl;
-  //cerr << "block total width = " << b_tot << endl;
-  //cerr << "            ratio = " << r_tot / b_tot << endl;
-  //cerr << "            ratio = " << b_tot / r_tot << endl;
-  //exit(0);
 
-  ////sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
-  //       return _placement.module(m1).x() < _placement.module(m2).x();
-  //     });
-  //for(const auto& mod_id : _modules) {
-  //  auto& mod = _placement.module(mod_id);
-  //  double orig_y = mod.y();
-  //  double best_cost[2] = {numeric_limits<double>::max(),
-  //                         numeric_limits<double>::max()};
-  //  int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
-  //  int best_row_id[2] = {-1, -1};
-  //  for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
-  //    bool suc = false;
-  //    int cur_row_id = mid_row_id;
-  //    while(true) {
-  //      auto& row = _placement.row(cur_row_id);
-  //      if(abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
-  //      if(row.enough_space(mod.width())) {
-  //        double cur_cost = row.placeRow(mod, mod_id, _placement);
-  //        if(cur_cost < best_cost[dr] ) {
-  //          best_cost[dr] = cur_cost;
-  //          best_row_id[dr] = cur_row_id;
-  //          suc = true;
-  //        }
-  //      }
-  //      cur_row_id += (dr ? 1 : -1);
-  //      if(cur_row_id < 0 || cur_row_id >= nRows) break;
-  //    }
-  //    if(mid_row_id == nRows-1) break;
-  //  }
-  //  assert(best_row_id[0] != -1 || best_row_id[1] != -1);
-  //  if(best_cost[0] < best_cost[1])
-  //    _placement.row(best_row_id[0]).placeRow_final(mod, mod_id, _placement);
-  //  else
-  //    _placement.row(best_row_id[1]).placeRow_final(mod, mod_id, _placement);
-  //}
-  //for(const auto& mod_id : _modules) {
-  //  const auto& mod = _placement.module(mod_id);
-  //  _bestLocs[mod_id] = {mod.x(), mod.y()};
-  //}
+  sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
+         return _placement.module(m1).x() < _placement.module(m2).x();
+       });
+  for(const auto& mod_id : _modules) {
+    auto& mod = _placement.module(mod_id);
+    double orig_y = mod.y();
+    double best_cost[2] = {numeric_limits<double>::max(),
+                           numeric_limits<double>::max()};
+    int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
+    int best_row_id[2] = {-1, -1};
+    for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
+      bool suc = false;
+      int cur_row_id = mid_row_id;
+      while(true) {
+        auto& row = _placement.row(cur_row_id);
+        if(abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
+        if(row.enough_space(mod.width())) {
+          double cur_cost = row.placeRow(mod, mod_id, _placement);
+          if(cur_cost < best_cost[dr] ) {
+            best_cost[dr] = cur_cost;
+            best_row_id[dr] = cur_row_id;
+            suc = true;
+          }
+        }
+        cur_row_id += (dr ? 1 : -1);
+        if(cur_row_id < 0 || cur_row_id >= nRows) break;
+      }
+      if(mid_row_id == nRows-1) break;
+    }
+    assert(best_row_id[0] != -1 || best_row_id[1] != -1);
+    if(best_cost[0] < best_cost[1])
+      _placement.row(best_row_id[0]).placeRow_final(mod, mod_id, _placement);
+    else
+      _placement.row(best_row_id[1]).placeRow_final(mod, mod_id, _placement);
+  }
+  for(const auto& mod_id : _modules) {
+    const auto& mod = _placement.module(mod_id);
+    _bestLocs[mod_id] = {mod.x(), mod.y()};
+  }
+}
+bool CLegal::solve() {
+  saveGlobalResult();
+  abacus();
   setLegalResult();
   if(check()) {
-    cout<< "total displacement: " << totalDisplacement() << endl;
+    cerr << "total displacement: " << totalDisplacement() << endl;
     return true;
   } else return false;
 }
 bool CLegal::check() {
-  //cout << "start check" << endl;
+  //cerr << "start check" << endl;
   int notInSite=0, notInRow=0, overLap=0;
   ///////////////////////////////////////////////////////
   //1.check all standard cell are on row and in the core region
@@ -85,7 +183,7 @@ bool CLegal::check() {
     double curX = module.x();
     double curY = module.y();
     double res = (curY - _placement.boundaryBottom()) / rowHeight;
-    //cout << curY << " " << res << endl;
+    //cerr << curY << " " << res << endl;
     int ires = (int) res;
     if((_placement.boundaryBottom() + _placement.getRowHeight()*ires) != curY) {
       cerr<<"\nWarning: cell:"<<i<<" is not on row!!";
@@ -132,7 +230,7 @@ bool CLegal::check() {
         Module &modNext = *modules[ nextId ];
         if( mod.x() + mod.width() > modules[ nextId ]->x() ){
           ++overLap;
-          cout << mod.name() << " overlap with " << modNext.name() << endl;
+          cerr << mod.name() << " overlap with " << modNext.name() << endl;
         }
         ++nextId;
         if(nextId == modules.size()) break;
@@ -140,16 +238,16 @@ bool CLegal::check() {
     }
   }
   //cout << endl <<
-  cout <<
+  cerr <<
     "  # row error: "<<notInRow<<
     "\n  # site error: "<<notInSite<<
     "\n  # overlap error: "<<overLap<< endl;
   //cout << "end of check" << endl;
   if( notInRow!=0 || notInSite!=0 || overLap!=0 ) {
-    cout <<"Check failed!!" << endl;
+    cerr <<"Check failed!!" << endl;
     return false;
   } else {
-    cout <<"Check success!!" << endl;
+    cerr <<"Check success!!" << endl;
     return true;
   }
 }
