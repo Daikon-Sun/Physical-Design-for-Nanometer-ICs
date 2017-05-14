@@ -114,6 +114,7 @@ void CLegal::mysolve() {
   }
   _placement.removeDummyModule();
 }
+#ifdef ABACUS
 void CLegal::abacus() {
   const double& bott_bound = _placement.boundaryBottom();
   const double& rowHeight = _placement.getRowHeight();
@@ -150,9 +151,9 @@ void CLegal::abacus() {
     }
     assert(best_row_id[0] != -1 || best_row_id[1] != -1);
     if(best_cost[0] < best_cost[1])
-      _placement.row(best_row_id[0]).placeRow_final(mod, mod_id, _placement);
+      _placement.row(best_row_id[0]).placeRow_final(mod, mod_id);
     else
-      _placement.row(best_row_id[1]).placeRow_final(mod, mod_id, _placement);
+      _placement.row(best_row_id[1]).placeRow_final(mod, mod_id);
   }
   for(int i = 0; i<nRows; ++i)
     _placement.row(i).refresh(_placement);
@@ -161,9 +162,63 @@ void CLegal::abacus() {
     _bestLocs[mod_id] = {mod.x(), mod.y()};
   }
 }
+#else
+void CLegal::exact() {
+  const double& left_bound = _placement.boundaryLeft();
+  const double& bott_bound = _placement.boundaryBottom();
+  const double& rowHeight = _placement.getRowHeight();
+  const int&& nRows = _placement.numRows();
+
+  sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
+         return _placement.module(m1).x() < _placement.module(m2).x();
+       });
+  for(const auto& mod_id : _modules) {
+    auto& mod = _placement.module(mod_id);
+    const double& orig_y = mod.y();
+    double best_cost[2] = {numeric_limits<double>::max(),
+                           numeric_limits<double>::max()};
+    int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
+    int best_row_id[2] = {-1, -1};
+    for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
+      bool suc = false;
+      int cur_row_id = mid_row_id;
+      while(true) {
+        auto& row = _placement.row(cur_row_id);
+        if(abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
+        if(row.enough_space(mod.width())) {
+          double cur_cost = row.placeRow(mod, left_bound);
+          if(cur_cost < best_cost[dr] ) {
+            best_cost[dr] = cur_cost;
+            best_row_id[dr] = cur_row_id;
+            suc = true;
+          }
+        }
+        cur_row_id += (dr ? 1 : -1);
+        if(cur_row_id < 0 || cur_row_id >= nRows) break;
+      }
+      if(mid_row_id == nRows-1) break;
+    }
+    assert(best_row_id[0] != -1 || best_row_id[1] != -1);
+    if(best_cost[0] < best_cost[1])
+      _placement.row(best_row_id[0]).placeRow_final(mod, mod_id, left_bound);
+    else
+      _placement.row(best_row_id[1]).placeRow_final(mod, mod_id, left_bound);
+  }
+  for(int i = 0; i<nRows; ++i)
+    _placement.row(i).refresh(_placement);
+  for(const auto& mod_id : _modules) {
+    const auto& mod = _placement.module(mod_id);
+    _bestLocs[mod_id] = {mod.x(), mod.y()};
+  }
+}
+#endif
 bool CLegal::solve() {
   saveGlobalResult();
+#ifdef ABACUS
   abacus();
+#else
+  exact();
+#endif
   setLegalResult();
   if(check()) {
     cerr << "total displacement: " << totalDisplacement() << endl;

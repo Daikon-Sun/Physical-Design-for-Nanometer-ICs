@@ -4,10 +4,12 @@
 #define ROW_H
 
 #include <vector>
+#include <set>
 #include "Module.h"
 
 using namespace std;
 
+#ifdef ABACUS
 struct Cluster {
   Cluster(const double& xc) : _xc(xc), _ec(0), _wc(0), _qc(0) {
     _modules.reserve(16);
@@ -23,6 +25,26 @@ struct Cluster {
   double _xc, _ec, _wc, _qc;
   vector<int> _modules;
 };
+#else
+struct Cluster2 {
+  Cluster2(Module& mod, int mod_id) : _wc(mod.width()) {
+    _modules.push_back(mod_id);
+    _xcs.insert(mod.x());
+    _it = _xcs.begin();
+  }
+  double right() { return *_it + _wc; }
+  void addMod(Module& mod, int mod_id, const double& xmin) {
+    _xcs.insert(max(mod.x() - _wc, xmin));
+    if(_xcs.size()%2 == 0) --_it;
+    _wc += mod.width();
+    _modules.push_back(mod_id);
+  }
+  double _wc;
+  multiset<double>::iterator _it;
+  multiset<double> _xcs;
+  vector<int> _modules;
+};
+#endif
 class Row {
  public:
   enum Orient {OR_N, OR_W, OR_S, OR_E, OR_FN, OR_FW, OR_FS, OR_FE};
@@ -34,7 +56,7 @@ class Row {
       _numSites(numSites), _orient(orient), _isSymmetric(isSymmetric) {
     _clusters.reserve(20);
   }
-
+#ifdef ABACUS
   void Collapse() {
     auto& clus = _clusters.back();
     assert(clus._ec);
@@ -60,7 +82,29 @@ class Row {
                            _clusters.back()._modules.begin(),
                            _clusters.back()._modules.end());
   }
+  double placeRow(Module&, int, Placement&);
+  void placeRow_final(Module&, int);
   void refresh(Placement&);
+#else
+  void Collapse(const double& xmin) {
+    auto& clus = _clusters.back();
+    const double& xc = *clus._it;
+    if(_clusters.size() > 1 && _clusters[_clusters.size()-2].right() > xc) {
+      auto& clus2 = _clusters[_clusters.size()-2];
+      for(auto& d : clus._xcs) clus2._xcs.insert(max(d - clus2._wc, xmin));
+      clus2._wc += clus._wc;
+      clus2._modules.insert(clus2._modules.end(),
+                            clus._modules.begin(), clus._modules.end());
+      _clusters.pop_back();
+    }
+  }
+  double placeRow(Module&, const double&);
+  void placeRow_final(Module&, int, const double&);
+  void refresh(Placement&);
+#endif
+  const double& space() { return _space; }
+  bool enough_space(const double& w) { return _space >= w; }
+
   vector<double> m_interval;
   /////////////////////////////////////////////
   // get
@@ -81,10 +125,7 @@ class Row {
   void setOrient(Orient orient) { _orient = orient; }
   void setIsSymmetric(bool isSymmetric) { _isSymmetric = isSymmetric; }
   void setWidth() { _space = _width = width(); }
-  double placeRow(Module&, int, Placement&);
-  void placeRow_final(Module&, int, Placement&);
-  bool enough_space(const double& w) { return _space >= w; }
-  const double& space() { return _space; }
+
  private:
   // variables from benchmark input
   double _x, _y; // low x and low y
@@ -96,7 +137,11 @@ class Row {
   unsigned _numSites; // number of sites
   Orient _orient; // orient
   bool _isSymmetric; // symmetry
+#ifdef ABACUS
   vector<Cluster> _clusters;
+#else
+  vector<Cluster2> _clusters;
+#endif
 };
 
 #endif // ROW_H
