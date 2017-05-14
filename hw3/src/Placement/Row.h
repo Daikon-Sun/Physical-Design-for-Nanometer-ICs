@@ -9,9 +9,9 @@
 using namespace std;
 
 struct Cluster {
-  Cluster(const double& xc) : _xc(xc), _ec(0), _wc(0), _qc(0) {}
-  double _xc, _ec, _wc, _qc;
-  vector<int> _modules;
+  Cluster(const double& xc) : _xc(xc), _ec(0), _wc(0), _qc(0) {
+    _modules.reserve(16);
+  }
   double right() { return _xc + _wc; }
   void addMod(Module& mod, int mod_id) { 
     _modules.push_back(mod_id); 
@@ -20,17 +20,20 @@ struct Cluster {
     _qc += ei * (mod.x() - _wc);
     _wc += mod.width();
   }
+  double _xc, _ec, _wc, _qc;
+  vector<int> _modules;
 };
-
 class Row {
  public:
   enum Orient {OR_N, OR_W, OR_S, OR_E, OR_FN, OR_FW, OR_FS, OR_FE};
-
+  
   Row(double x = -1, double y = -1, double height = -1, 
       double siteSpacing = -1, unsigned numSites = -1, 
       Orient orient = OR_N, bool isSymmetric = true)
     : _x(x), _y(y), _height(height), _siteSpacing(siteSpacing),
-      _numSites(numSites), _orient(orient), _isSymmetric(isSymmetric) {}
+      _numSites(numSites), _orient(orient), _isSymmetric(isSymmetric) {
+    _clusters.reserve(20);
+  }
 
   void Collapse() {
     auto& clus = _clusters.back();
@@ -39,11 +42,6 @@ class Row {
     if(clus._xc < _x) clus._xc = _x;
     else if(clus._xc > _x + _width - clus._wc)
       clus._xc = _x + _width - clus._wc;
-    //if(clus._xc < -62172 || clus._xc >= _x+_width) {
-    //  cerr << clus._xc << " " << _x << " " << _width 
-    //       << " " << clus._wc << endl;
-    //  exit(0);
-    //}
     if(_clusters.size() > 1
        && _clusters[_clusters.size()-2].right() > clus._xc) {
       Addcluster();
@@ -62,6 +60,7 @@ class Row {
                            _clusters.back()._modules.begin(),
                            _clusters.back()._modules.end());
   }
+  void refresh(Placement&);
   vector<double> m_interval;
   /////////////////////////////////////////////
   // get

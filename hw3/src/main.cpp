@@ -40,6 +40,8 @@ bool handleArgument(const int& argc, char* argv[], CParamPlacement& param) {
 }
 ///////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
   gArg.Init(argc, argv);
   if(!handleArgument( argc, argv, param )) return -1;
 
@@ -57,12 +59,12 @@ int main(int argc, char *argv[]) {
   //               placement.rectangleChip().right(),
   //               placement.rectangleChip().top()) << endl;
 
-  time_t total_time=0;
+  //time_t total_time=0;
   ////////////////////////////////////////////////////////////////
   // Legalization
   ////////////////////////////////////////////////////////////////
-  time_t legal_time_start = time(NULL);
-  time_t total_legal_time = 0;
+  //time_t legal_time_start = time(NULL);
+  //time_t total_legal_time = 0;
   placement.renew_row_width();
   if(param.bRunLegal) {
     //cout<<endl<<"////// Legalization ///////"<<endl;
@@ -73,10 +75,10 @@ int main(int argc, char *argv[]) {
     //if(bLegal) cout<<"legalization success!"<<endl;
     //else cout<<"legalization fail!"<<endl;
 
-    placement.outputGnuplotFigure(placement.name()+".lg.plt");
-    placement.outputBookshelfFormat(placement.name()+".lg.pl");
-    total_legal_time = time(NULL) - legal_time_start;
-    total_time+=total_legal_time;
+    //placement.outputGnuplotFigure(placement.name()+".lg.plt");
+    //placement.outputBookshelfFormat(placement.name()+".lg.pl");
+    //total_legal_time = time(NULL) - legal_time_start;
+    //total_time+=total_legal_time;
   }
   //cout<<endl<<endl<<"////////////////////"<<endl;
   //if(!placement.plname().empty())

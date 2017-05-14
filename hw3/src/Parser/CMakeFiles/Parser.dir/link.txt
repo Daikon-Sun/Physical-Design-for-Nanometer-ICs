@@ -1,2 +1,0 @@
-/usr/bin/ar qc libParser.a  CMakeFiles/Parser.dir/BookshelfParser.cpp.o
-/usr/bin/ranlib libParser.a

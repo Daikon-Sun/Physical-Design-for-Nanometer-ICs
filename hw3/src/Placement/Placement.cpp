@@ -107,10 +107,10 @@ double Placement::computeTotalNetLength(int cellid) {
 }
 void Placement::connectPinsWithModulesAndNets() {
   // clear pins for modules and nets
-  for (unsigned moduleId = 0; moduleId < _modules.size(); moduleId++)
-    _modules[moduleId].clearPins();
-  for (unsigned netId = 0; netId < _nets.size(); netId++)
-    net(netId).clearPins();
+  //for (unsigned moduleId = 0; moduleId < _modules.size(); moduleId++)
+  //  _modules[moduleId].clearPins();
+  //for (unsigned netId = 0; netId < _nets.size(); netId++)
+  //  net(netId).clearPins();
   for (unsigned pinID = 0; pinID < _pins.size(); pinID++)
     pin(pinID).setPinId(pinID);
   // add pins for modules and nets

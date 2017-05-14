@@ -20,16 +20,13 @@ inline void smooth(vector<double>& v) {
     nv[i] = (v[i-1] + 2*v[i] + v[i+1]) / 4;
   v = nv;
 }
-bool CLegal::mysolve() {
+void CLegal::mysolve() {
   const double& bott_bound = _placement.boundaryBottom();
   const double& left_bound = _placement.boundaryLeft();
   const double& righ_bound = _placement.boundaryRight();
   const double& rowHeight = _placement.getRowHeight();
   const int&& nMods = _placement.numModules();
   const int&& nRows = _placement.numRows();
-  double b_tot = 0, r_tot = nRows * _placement.row(0).width();
-  for(const auto& mod_id : _modules) b_tot += _placement.module(mod_id).width();
-  double ratio = b_tot / r_tot;
 
   vector<double> rcnt(nRows);
   for(const auto& mod_id : _modules) {
@@ -117,17 +114,17 @@ bool CLegal::mysolve() {
   }
   _placement.removeDummyModule();
 }
-bool CLegal::abacus() {
+void CLegal::abacus() {
   const double& bott_bound = _placement.boundaryBottom();
   const double& rowHeight = _placement.getRowHeight();
   const int&& nRows = _placement.numRows();
 
-  sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
+  sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
          return _placement.module(m1).x() < _placement.module(m2).x();
        });
   for(const auto& mod_id : _modules) {
     auto& mod = _placement.module(mod_id);
-    double orig_y = mod.y();
+    const double& orig_y = mod.y();
     double best_cost[2] = {numeric_limits<double>::max(),
                            numeric_limits<double>::max()};
     int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
@@ -157,6 +154,8 @@ bool CLegal::abacus() {
     else
       _placement.row(best_row_id[1]).placeRow_final(mod, mod_id, _placement);
   }
+  for(int i = 0; i<nRows; ++i)
+    _placement.row(i).refresh(_placement);
   for(const auto& mod_id : _modules) {
     const auto& mod = _placement.module(mod_id);
     _bestLocs[mod_id] = {mod.x(), mod.y()};

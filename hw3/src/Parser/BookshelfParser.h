@@ -8,7 +8,7 @@ using namespace std;
 //#include <tr1/unordered_map>
 //using std::tr1::unordered_map;
 
-#include <map>
+#include <unordered_map>
 
 #include "Placement/Placement.h"
 
@@ -16,7 +16,7 @@ class BookshelfParser
 {
 public:
     BookshelfParser(Placement &placement);
-    bool readAuxFile(string filePathName);
+    bool readAuxFile(const string& filePathName);
 
 private:
     bool readNodesFile(const string& filePathName);
@@ -29,7 +29,7 @@ private:
 
     // mapping nodeName to moduleId
     //unordered_map<string, unsigned> _nodeNameToModuleId;
-    map<string, unsigned> _nodeNameToModuleId;
+    unordered_map<string, unsigned> _nodeNameToModuleId;
 };
 
 #endif // BOOKSHELFPARSER_H

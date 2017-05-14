@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 PROJECT (place)
 #SET(CMAKE_C_FLAGS "-std=c++14 -O3 -Wall -g -fopenmp -ffast-math -DUSE_OPENMP")
-SET(CMAKE_CXX_FLAGS "-std=c++14 -O3 -fopenmp -ffast-math -DUSE_OPENMP")
+SET(CMAKE_CXX_FLAGS "-std=c++14 -O3 -Wall -Wextra -pg -fopenmp -ffast-math -DUSE_OPENMP")
 ADD_SUBDIRECTORY(Parser)
 ADD_SUBDIRECTORY(PlaceCommon)
 ADD_SUBDIRECTORY(Gnuplot)

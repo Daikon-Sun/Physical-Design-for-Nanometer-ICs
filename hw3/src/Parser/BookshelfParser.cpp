@@ -8,7 +8,7 @@
 
 BookshelfParser::BookshelfParser(Placement &placement)
   : _placement(placement) {}
-bool BookshelfParser::readAuxFile(string filePathName) {
+bool BookshelfParser::readAuxFile(const string& filePathName) {
   // open file
   ifstream auxFile(filePathName.c_str());
   if (!auxFile) { 
@@ -49,9 +49,9 @@ bool BookshelfParser::readAuxFile(string filePathName) {
   /////////////////////////////////////////////
   readSclFile(filePath + sclFileName);
   readNodesFile(filePath + nodesFileName);
-  readNetsFile(filePath + netsFileName);
-  _placement.connectPinsWithModulesAndNets();
-  if(_placement.plname()!="") {
+  //readNetsFile(filePath + netsFileName);
+  //_placement.connectPinsWithModulesAndNets();
+  if(!_placement.plname().empty()) {
     plFileName = _placement.plname();
     readPlFile(plFileName);
     cout<<"load pl file: "<<plFileName<<endl;
@@ -78,7 +78,7 @@ bool BookshelfParser::readNodesFile(const string& filePathName) {
   getline(nodesFile, line);
   while (getline(nodesFile, line)) {
     // ignore comments and empty lines
-    if(line[0] == '#' || line == "") continue;
+    if(line[0] == '#' || line.empty()) continue;
     // data for each module
     string nodeName;
     double width = -1;
@@ -111,7 +111,7 @@ bool BookshelfParser::readNodesFile(const string& filePathName) {
       module.setHeight(height);
       module.setIsFixed(terminal);
       numNodesRead++;
-      if (terminal) numTerminalsRead++;
+      if(terminal) numTerminalsRead++;
       else numModulesRead++;
     }
   }

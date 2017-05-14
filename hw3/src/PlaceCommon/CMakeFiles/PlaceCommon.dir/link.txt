@@ -1,2 +1,0 @@
-/usr/bin/ar qc libPlaceCommon.a  CMakeFiles/PlaceCommon.dir/arghandler.cpp.o CMakeFiles/PlaceCommon.dir/Util.cpp.o CMakeFiles/PlaceCommon.dir/ParamPlacement.cpp.o
-/usr/bin/ranlib libPlaceCommon.a

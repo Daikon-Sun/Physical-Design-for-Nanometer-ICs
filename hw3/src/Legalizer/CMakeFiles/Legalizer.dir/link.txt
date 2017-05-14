@@ -1,2 +1,0 @@
-/usr/bin/ar qc libLegalizer.a  CMakeFiles/Legalizer.dir/Legal.cpp.o
-/usr/bin/ranlib libLegalizer.a

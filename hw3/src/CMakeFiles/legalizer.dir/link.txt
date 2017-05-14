@@ -1,1 +1,0 @@
-/usr/bin/c++  -std=c++14 -O3 -fopenmp -ffast-math -DUSE_OPENMP  -rdynamic CMakeFiles/legalizer.dir/main.cpp.o  -o legalizer Legalizer/libLegalizer.a Placement/libPlacement.a Parser/libParser.a PlaceCommon/libPlaceCommon.a Gnuplot/libGnuplot.a 
