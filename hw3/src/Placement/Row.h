@@ -34,7 +34,9 @@ struct Cluster2 {
   }
   double right() { return *_it + _wc; }
   void addMod(Module& mod, int mod_id, const double& xmin) {
-    _xcs.insert(max(mod.x() - _wc, xmin));
+    double val = max(mod.x() - _wc, xmin);
+    _xcs.insert(val);
+    if(*_it == val) ++_it;
     if(_xcs.size()%2 == 0) --_it;
     _wc += mod.width();
     _modules.push_back(mod_id);
@@ -88,14 +90,21 @@ class Row {
 #else
   void Collapse(const double& xmin) {
     auto& clus = _clusters.back();
-    const double& xc = *clus._it;
+    double xc = *clus._it;
     if(_clusters.size() > 1 && _clusters[_clusters.size()-2].right() > xc) {
       auto& clus2 = _clusters[_clusters.size()-2];
-      for(auto& d : clus._xcs) clus2._xcs.insert(max(d - clus2._wc, xmin));
+      bool pre = true;
+      for(auto& d : clus._xcs) {
+        double val = max(d - clus2._wc, xmin);
+        clus2._xcs.insert(val);
+        if(val == *clus2._it && pre) ++clus2._it;
+        if(&d == &(*clus._it)) pre = false;
+      }
       clus2._wc += clus._wc;
       clus2._modules.insert(clus2._modules.end(),
                             clus._modules.begin(), clus._modules.end());
       _clusters.pop_back();
+      //Collapse(xmin);
     }
   }
   double placeRow(Module&, const double&);

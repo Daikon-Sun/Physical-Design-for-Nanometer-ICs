@@ -121,7 +121,8 @@ void CLegal::abacus() {
   const int&& nRows = _placement.numRows();
 
   sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
-         return _placement.module(m1).x() < _placement.module(m2).x();
+         return _placement.module(m1).centerX()
+                < _placement.module(m2).centerX();
        });
   for(const auto& mod_id : _modules) {
     auto& mod = _placement.module(mod_id);
@@ -163,34 +164,38 @@ void CLegal::abacus() {
   }
 }
 #else
+constexpr double r = 0.7;
 void CLegal::exact() {
-  const double& left_bound = _placement.boundaryLeft();
-  const double& bott_bound = _placement.boundaryBottom();
-  const double& rowHeight = _placement.getRowHeight();
+  const double left_bound = _placement.boundaryLeft();
+  const double bott_bound = _placement.boundaryBottom();
+  const double rowHeight = _placement.getRowHeight();
   const int&& nRows = _placement.numRows();
 
   sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
-         return _placement.module(m1).x() < _placement.module(m2).x();
+         auto& p1 = _placement.module(m1);
+         auto& p2 = _placement.module(m2);
+         return p1.x()+0.5*p1.width() < p2.x()+0.5*p2.width();
        });
-  for(const auto& mod_id : _modules) {
+  for(size_t i = 0; i<_modules.size(); ++i) {
+    int mod_id = _modules[i];
     auto& mod = _placement.module(mod_id);
-    const double& orig_y = mod.y();
+    double orig_y = mod.y();
     double best_cost[2] = {numeric_limits<double>::max(),
                            numeric_limits<double>::max()};
     int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
     int best_row_id[2] = {-1, -1};
     for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
-      bool suc = false;
+      int suc = false;
       int cur_row_id = mid_row_id;
       while(true) {
         auto& row = _placement.row(cur_row_id);
-        if(abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
+        if(r * abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
         if(row.enough_space(mod.width())) {
           double cur_cost = row.placeRow(mod, left_bound);
           if(cur_cost < best_cost[dr] ) {
             best_cost[dr] = cur_cost;
             best_row_id[dr] = cur_row_id;
-            suc = true;
+            ++suc;
           }
         }
         cur_row_id += (dr ? 1 : -1);
