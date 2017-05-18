@@ -1,0 +1,6 @@
+0.99999999
+NET n1 c1 c2 c3 ;
+NET n2 c2 c3 c4 ;
+NET n3 c2 c5 ;
+NET n4 c2 c6 ;
+NET n5 c4 c5 ;
