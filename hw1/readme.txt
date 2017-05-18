@@ -1,5 +1,5 @@
 1. ID: B03901056
-2. Name: ?]?Z??
+2. Name: 孫凡耕
 3. Programming Language: C/C++
 4. Compiler: gcc/g++ (better with version >= 5.2)
 5. Pack and Compress: tar zcvf b03901056_hw1.tar.gz b03901056_hw1
