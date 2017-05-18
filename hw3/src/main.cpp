@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
     //if(bLegal) cout<<"legalization success!"<<endl;
     //else cout<<"legalization fail!"<<endl;
 
-    placement.outputGnuplotFigure(placement.name()+".lg.plt");
+    //placement.outputGnuplotFigure(placement.name()+".lg.plt");
     placement.outputBookshelfFormat(placement.name()+".lg.pl");
     //total_legal_time = time(NULL) - legal_time_start;
     //total_time+=total_legal_time;
