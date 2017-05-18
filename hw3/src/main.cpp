@@ -39,11 +39,19 @@ bool handleArgument(const int& argc, char* argv[], CParamPlacement& param) {
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////
+double r, alpha, beta;
 int main(int argc, char *argv[]) {
   ios_base::sync_with_stdio(0);
   cin.tie(0);
   gArg.Init(argc, argv);
   if(!handleArgument( argc, argv, param )) return -1;
+
+  r = atof(argv[3]);
+  alpha = atof(argv[4]);
+  beta = atof(argv[5]);
+  //cerr << "r = " << r << endl;
+  //cerr << "alpha = " << alpha << endl;
+  //cerr << "beta = " << beta << endl;
 
   ::omp_set_num_threads(param.threadNum);
 
@@ -75,7 +83,7 @@ int main(int argc, char *argv[]) {
     //if(bLegal) cout<<"legalization success!"<<endl;
     //else cout<<"legalization fail!"<<endl;
 
-    //placement.outputGnuplotFigure(placement.name()+".lg.plt");
+    placement.outputGnuplotFigure(placement.name()+".lg.plt");
     placement.outputBookshelfFormat(placement.name()+".lg.pl");
     //total_legal_time = time(NULL) - legal_time_start;
     //total_time+=total_legal_time;

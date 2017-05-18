@@ -16,7 +16,7 @@ class Placement;
 
 class Placement {
  public:
-  Placement() {};
+  Placement() : _numunFixed(0) {};
   void renew_row_width() { for(auto& row : _rows) row.setWidth(); }
   //void row_assert() {
   //  double h = _rows[0].height();
@@ -68,6 +68,7 @@ class Placement {
   const double& getRowHeight() {return _rowHeight;}
 
   unsigned numModules() {return _modules.size();}
+  const unsigned& numunFixed() { return _numunFixed; }
   unsigned numNets() {return _nets.size();}
   unsigned numPins() {return _pins.size();}
   unsigned numRows() {return _rows.size();}
@@ -86,6 +87,7 @@ class Placement {
   void removeDummyModule() { _modules.pop_back(); _modules.pop_back(); }
 
   void setNumModules(unsigned size) {_modules.resize(size);}
+  void setnumunFixed(unsigned size) { _numunFixed = size; }
   void setNumNets(unsigned size) {_nets.resize(size);}
   void setNumPins(unsigned size) {_pins.resize(size);}
   void setNumRows(unsigned size) {_rows.resize(size);}
@@ -116,6 +118,7 @@ class Placement {
   // design statistics
   /////////////////////////////////////////////
   void updateDesignStatistics();
+  unsigned _numunFixed;
   Rectangle _rectangleChip;
   double _rowHeight;
   double _boundaryTop;

@@ -57,10 +57,10 @@ void Row::placeRow_final(Module& mod, int mod_id, const double& xmin) {
     Collapse(xmin);
   }
 }
-constexpr double r = 0.7;
-constexpr double alpha = 1.1;
-constexpr double beta = 0.1;
-double Row::placeRow(Module& mod, const double& xmin) {
+extern double r;
+extern double alpha;
+extern double beta;
+double Row::placeRow(const Module& mod, const double& xmin) {
   double ydiff = r * abs(_y - mod.y());
   if(_clusters.empty() || _clusters.back().right() <= mod.x()) return ydiff;
   auto& clus = _clusters.back();

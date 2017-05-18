@@ -107,7 +107,7 @@ class Row {
       //Collapse(xmin);
     }
   }
-  double placeRow(Module&, const double&);
+  double placeRow(const Module&, const double&);
   void placeRow_final(Module&, int, const double&);
   void refresh(Placement&);
 #endif

@@ -123,6 +123,7 @@ bool BookshelfParser::readNodesFile(const string& filePathName) {
             "match the number of nodes read" << endl;
     cout << numModulesRead << " " << numTerminalsRead <<" " << numNodes << endl;
   }
+  _placement.setnumunFixed(numModulesRead);
   if (numTerminalsRead != numTerminals)
     cout << "[Warning] numTerminals in .nodes do not "
             "match the number of terminals read" << endl;

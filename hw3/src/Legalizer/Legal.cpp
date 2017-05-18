@@ -118,7 +118,7 @@ void CLegal::mysolve() {
 void CLegal::abacus() {
   const double& bott_bound = _placement.boundaryBottom();
   const double& rowHeight = _placement.getRowHeight();
-  const int&& nRows = _placement.numRows();
+  const int nRows = _placement.numRows();
 
   sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
          return _placement.module(m1).centerX()
@@ -164,12 +164,12 @@ void CLegal::abacus() {
   }
 }
 #else
-constexpr double r = 0.7;
+extern double r;
 void CLegal::exact() {
   const double left_bound = _placement.boundaryLeft();
   const double bott_bound = _placement.boundaryBottom();
   const double rowHeight = _placement.getRowHeight();
-  const int&& nRows = _placement.numRows();
+  const int nRows = _placement.numRows();
 
   sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
          auto& p1 = _placement.module(m1);
@@ -185,17 +185,17 @@ void CLegal::exact() {
     int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
     int best_row_id[2] = {-1, -1};
     for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
-      int suc = false;
+      bool suc = false;
       int cur_row_id = mid_row_id;
       while(true) {
         auto& row = _placement.row(cur_row_id);
         if(r * abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
         if(row.enough_space(mod.width())) {
           double cur_cost = row.placeRow(mod, left_bound);
-          if(cur_cost < best_cost[dr] ) {
+          if(cur_cost < best_cost[dr]) {
             best_cost[dr] = cur_cost;
             best_row_id[dr] = cur_row_id;
-            ++suc;
+            suc = true;
           }
         }
         cur_row_id += (dr ? 1 : -1);
@@ -239,6 +239,7 @@ bool CLegal::check() {
   const double& rowHeight = _placement.getRowHeight();
   for(unsigned int i=0; i<_placement.numModules(); ++i) {
     Module& module = _placement.module(i);
+    if(module.isFixed()) continue;
     double curX = module.x();
     double curY = module.y();
     double res = (curY - _placement.boundaryBottom()) / rowHeight;
@@ -266,6 +267,7 @@ bool CLegal::check() {
   vector< vector<Module*> > rowModules( numRows, vector<Module*>( 0 ) );
   for(unsigned int i=0; i<_placement.numModules(); ++i) {
     Module& module = _placement.module(i);
+    if(module.isFixed()) continue;
     double curY = _bestLocs[i].y;
 
     if( module.area() == 0 ) continue;
@@ -296,7 +298,7 @@ bool CLegal::check() {
       }
     }
   }
-  //cout << endl <<
+  //cout << endl;
   cerr <<
     "  # row error: "<<notInRow<<
     "\n  # site error: "<<notInSite<<
@@ -322,28 +324,18 @@ double CLegal::totalDisplacement() {
 }
 CLegal::CLegal(Placement& placement) : _placement(placement) {
   //Compute average cell width
-  int cell_count = 0;
-  double total_width = 0;
   //double max_height = 0.0;
   //m_max_module_height = 0.0;
   //m_max_module_width = 0.0;
-  _modules.resize(placement.numModules());
-  iota(_modules.begin(), _modules.end(), 0);
+  _modules.resize(placement.numunFixed());
+  int cnt = 0;
   for(unsigned  moduleId = 0 ; moduleId < placement.numModules() ; moduleId++) {
     Module& curModule = placement.module(moduleId);
-    //m_max_module_height = max( m_max_module_height, curModule.height() );
-    //m_max_module_width = max( m_max_module_width, curModule.width() );
     //Do not include fixed cells and macros
-    if(curModule.isFixed() || curModule.height() > placement.getRowHeight())
+    if(curModule.isFixed() || curModule.height() != placement.getRowHeight())
       continue;
-    cell_count++;
-    total_width += curModule.width();
+    _modules[cnt++] = moduleId;
   }
-  //m_average_cell_width = total_width / cell_count;
-  //_free_sites = placement.m_sites;
-  //site_bottom = free_sites.front().y();
-  //site_height = free_sites.front().height();
-  //initalize m_origLocations and bestLocs
   _bestLocs.resize( placement.numModules() );
   _globLocs.resize( placement.numModules() );
 }
