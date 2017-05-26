@@ -15,6 +15,8 @@
   (2) a binary program "legalizer" will be generated.
   compiler flag: g++ -std=c++11 -O3 -fopenmp -ffast-math -DUSE_OPENMP
 8. How to Run:
-  ./<executable file> -aux <input.aux>
+  ./<executable file> -aux <input.aux> [--plot] [--check]
+  Flag "--plot" will output a gnuplot "input.plt" for visualization.
+  Flag "--check" will check whether the solution is legal or not.
   p.s. After running, an output file named "input.pl" will be saved in the 
        current directory.
