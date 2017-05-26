@@ -70,7 +70,7 @@ class CLegal {
   //double m_average_cell_width;    //Average standard cell width
   //Keep the bottom y coordinate of the sites and the
   //height of each site
-  //double site_bottom;
+  double _site_bottom;
   //double site_height;
   //int m_unlegal_count;            //Number of unlegalized cells
   //double _bott_bound, _left_bound;	//Record the chip left boundary

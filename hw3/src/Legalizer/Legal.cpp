@@ -122,15 +122,15 @@ void CLegal::abacus() {
   const int nRows = _placement.numRows();
 
   stable_sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
-                double x1 = _placement.module(m1).centerX();
-                double x2 = _placement.module(m2).centerX();
-                return x1 < x2;
+              double x1 = _placement.module(m1).centerX();
+              double x2 = _placement.module(m2).centerX();
+              return x1 < x2;
               });
   for(const auto& mod_id : _modules) {
     auto& mod = _placement.module(mod_id);
     const double& orig_y = mod.y();
     double best_cost[2] = {numeric_limits<double>::max(),
-                           numeric_limits<double>::max()};
+      numeric_limits<double>::max()};
     int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
     int best_row_id[2] = {-1, -1};
     for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
@@ -174,15 +174,15 @@ void CLegal::exact_forward() {
   const int nRows = _placement.numRows();
 
   stable_sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
-                double&& x1 = _placement.module(m1).centerX();
-                double&& x2 = _placement.module(m2).centerX();
-                return x1 < x2;
-             });
+              double&& x1 = _placement.module(m1).centerX();
+              double&& x2 = _placement.module(m2).centerX();
+              return x1 < x2;
+              });
   for(const int& mod_id : _modules) {
     auto& mod = _placement.module(mod_id);
     double orig_y = mod.y();
     double best_cost[2] = {numeric_limits<double>::max(),
-                           numeric_limits<double>::max()};
+      numeric_limits<double>::max()};
     int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
     int best_row_id[2] = {-1, -1};
     for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
@@ -227,17 +227,17 @@ void CLegal::exact_backward() {
   const int nRows = _placement.numRows();
 
   stable_sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
-                double x1 = _placement.module(m1).x();
-                double x2 = _placement.module(m2).x();
-                return x1 < x2;
-             });
+              double x1 = _placement.module(m1).x();
+              double x2 = _placement.module(m2).x();
+              return x1 < x2;
+              });
   reverse(_modules.begin(), _modules.end());
   for(const auto& mod_id : _modules) {
     auto& mod = _placement.module(mod_id);
     //cerr << mod_id << " " << setprecision(20) << mod.x() << endl;
     double orig_y = mod.y();
     double best_cost[2] = {numeric_limits<double>::max(),
-                           numeric_limits<double>::max()};
+      numeric_limits<double>::max()};
     int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
     int best_row_id[2] = {-1, -1};
     for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
@@ -283,7 +283,7 @@ bool CLegal::solve() {
   abacus();
 #else
   double diss[2] = {numeric_limits<double>::max(), 
-                    numeric_limits<double>::max()};
+    numeric_limits<double>::max()};
   _placement.renew_row();
   exact_forward();
   diss[0] = totalDisplacement();
@@ -315,31 +315,31 @@ void CLegal::restoreGlobal() {
   }
 }
 bool CLegal::check() {
-  //cerr << "start check" << endl;
-  int notInSite=0, notInRow=0, overLap=0;
+  cout << "start check" << endl;
+  int notInSite=0;
+  int notInRow=0;
+  int overLap=0;
   ///////////////////////////////////////////////////////
   //1.check all standard cell are on row and in the core region
   //////////////////////////////////////////////////////////
-  const double& rowHeight = _placement.getRowHeight();
   for(unsigned int i=0; i<_placement.numModules(); ++i) {
     Module& module = _placement.module(i);
     if(module.isFixed()) continue;
     double curX = module.x();
     double curY = module.y();
-    double res = (curY - _placement.boundaryBottom()) / rowHeight;
-    //cerr << curY << " " << res << endl;
+
+    double res = ( curY - _site_bottom ) / _placement.getRowHeight();
+    //cout << curY << " " << res << endl;
     int ires = (int) res;
-    if((_placement.boundaryBottom() + _placement.getRowHeight()*ires) != curY) {
+    if( (_site_bottom + _placement.getRowHeight() * ires) != curY ) {
       cerr<<"\nWarning: cell:"<<i<<" is not on row!!";
       ++notInRow;
     }
-    if((curY < _placement.boundaryBottom()) 
-    || (curX < _placement.boundaryLeft())
-    || ((curX+module.width()) > _placement.boundaryRight())
-    || ((curY+module.height()) > _placement.boundaryTop())) {
-      cerr << "\nWarning: cell:"<<i<<" is not in the core!!";
-      cerr << curY << " " << curX << " " << module.width() << " "
-           << module.height() << " " << module.name() << endl;
+    if((curY<_placement.boundaryBottom()) || 
+       (curX<_placement.boundaryLeft())||
+       ((curX+module.width())>_placement.boundaryRight()) ||
+       ((curY+module.height())>_placement.boundaryTop()) ) {
+      cerr<<"\nWarning: cell:"<<i<<" is not in the core!!";
       ++notInSite;
     }
   }
@@ -347,54 +347,134 @@ bool CLegal::check() {
   //2. row-based overlapping checking
   ///////////////////////////////////////////
   Rectangle chip = _placement.rectangleChip();
+  const double &rowHeight = _placement.getRowHeight();
   unsigned numRows = _placement.numRows();
   vector< vector<Module*> > rowModules( numRows, vector<Module*>( 0 ) );
   for(unsigned int i=0; i<_placement.numModules(); ++i) {
     Module& module = _placement.module(i);
-    if(module.isFixed()) continue;
     double curY = _bestLocs[i].y;
 
     if( module.area() == 0 ) continue;
+    if( module.isFixed() ) continue;
 
     double yLow = curY - chip.bottom();
     double yHigh= curY + module.height() - chip.bottom();
     size_t low = floor( yLow / rowHeight ), high = floor(yHigh / rowHeight);
-    if(fabs( yHigh - rowHeight * floor(yHigh / rowHeight) ) < 0.01) --high;
-    for( size_t j = low; j <= high; ++j ) rowModules[j].push_back(&module);
+    if( fabs( yHigh - rowHeight * floor(yHigh / rowHeight) ) < 0.01 ) --high;
+
+    for( size_t i = low; i <= high; ++i ) rowModules[ i ].push_back( &module );
   }
-  for(size_t i = 0; i < numRows; ++i) {
+  for( size_t i = 0; i < numRows; ++i ) {
     vector<Module*> &modules = rowModules[i];
     sort(modules.begin(), modules.end(), [](Module* a, Module* b){
          return a->x() < b->x(); });
-    if(modules.empty()) continue;
-    for(size_t j = 0; j < modules.size() - 1; ++j) {
+    if( modules.size() < 1 ) continue;
+    for( size_t j = 0; j < modules.size() - 1; ++j ) {
       Module &mod = *modules[ j ];
+      if(mod.isFixed()) continue;
       size_t nextId = j+1;
-      while( mod.x() + mod.width() > modules[ nextId ]->x() ){
+      while( mod.x() + mod.width() - modules[ nextId ]->x() > 0.01 ) {
         Module &modNext = *modules[ nextId ];
-        if( mod.x() + mod.width() > modules[ nextId ]->x() ){
+        if( mod.x() + mod.width() - modules[ nextId ]->x() > 0.01 ) {
           ++overLap;
-          cerr << mod.x()+mod.width() << " " << modules[nextId]->x() << endl;
-          cerr << mod.name() << " overlap with " << modNext.name() << endl;
+          cout << mod.name() << " overlap with " << modNext.name() << endl;
         }
-        ++nextId;
-        if(nextId == modules.size()) break;
+        ++nextId; if( nextId == modules.size() ) { break; }
       }
     }
   }
-  //cout << endl;
-  cerr <<
+  cout << endl <<
     "  # row error: "<<notInRow<<
     "\n  # site error: "<<notInSite<<
     "\n  # overlap error: "<<overLap<< endl;
-  //cout << "end of check" << endl;
-  if( notInRow!=0 || notInSite!=0 || overLap!=0 ) {
-    cerr <<"Check failed!!" << endl;
+
+  if(notInRow!=0 || notInSite!=0 || overLap!=0) {
+    cout <<"Check failed!!" << endl;
     return false;
   } else {
-    cerr <<"Check success!!" << endl;
+    cout <<"Check success!!" << endl;
     return true;
   }
+  ////cerr << "start check" << endl;
+  //int notInSite=0, notInRow=0, overLap=0;
+  /////////////////////////////////////////////////////////
+  ////1.check all standard cell are on row and in the core region
+  ////////////////////////////////////////////////////////////
+  //const double& rowHeight = _placement.getRowHeight();
+  //for(unsigned int i=0; i<_placement.numModules(); ++i) {
+  //  Module& module = _placement.module(i);
+  //  if(module.isFixed()) continue;
+  //  double curX = module.x();
+  //  double curY = module.y();
+  //  double res = (curY - _placement.boundaryBottom()) / rowHeight;
+  //  //cerr << curY << " " << res << endl;
+  //  int ires = (int) res;
+  //  if((_placement.boundaryBottom() + _placement.getRowHeight()*ires) != curY) {
+  //    cerr<<"\nWarning: cell:"<<i<<" is not on row!!";
+  //    ++notInRow;
+  //  }
+  //  if((curY < _placement.boundaryBottom()) 
+  //  || (curX < _placement.boundaryLeft())
+  //  || ((curX+module.width()) > _placement.boundaryRight())
+  //  || ((curY+module.height()) > _placement.boundaryTop())) {
+  //    cerr << "\nWarning: cell:"<<i<<" is not in the core!!";
+  //    cerr << curY << " " << curX << " " << module.width() << " "
+  //         << module.height() << " " << module.name() << endl;
+  //    ++notInSite;
+  //  }
+  //}
+  /////////////////////////////////////////////
+  ////2. row-based overlapping checking
+  /////////////////////////////////////////////
+  //Rectangle chip = _placement.rectangleChip();
+  //unsigned numRows = _placement.numRows();
+  //vector< vector<Module*> > rowModules( numRows, vector<Module*>( 0 ) );
+  //for(unsigned int i=0; i<_placement.numModules(); ++i) {
+  //  Module& module = _placement.module(i);
+  //  double curY = _bestLocs[i].y;
+
+  //  if( module.area() == 0 ) continue;
+  //  if(module.isFixed()) continue;
+
+  //  double yLow = curY - chip.bottom();
+  //  double yHigh= curY + module.height() - chip.bottom();
+  //  size_t low = floor( yLow / rowHeight ), high = floor(yHigh / rowHeight);
+  //  if(fabs( yHigh - rowHeight * floor(yHigh / rowHeight) ) < 0.01) --high;
+  //  for( size_t j = low; j <= high; ++j ) rowModules[j].push_back(&module);
+  //}
+  //for(size_t i = 0; i < numRows; ++i) {
+  //  vector<Module*> &modules = rowModules[i];
+  //  sort(modules.begin(), modules.end(), [](Module* a, Module* b){
+  //       return a->x() < b->x(); });
+  //  if(modules.empty()) continue;
+  //  for(size_t j = 0; j < modules.size() - 1; ++j) {
+  //    Module &mod = *modules[ j ];
+  //    size_t nextId = j+1;
+  //    while( mod.x() + mod.width() > modules[ nextId ]->x() ){
+  //      Module &modNext = *modules[ nextId ];
+  //      if( mod.x() + mod.width() > modules[ nextId ]->x() ){
+  //        ++overLap;
+  //        cerr << mod.x()+mod.width() << " " << modules[nextId]->x() << endl;
+  //        cerr << mod.name() << " overlap with " << modNext.name() << endl;
+  //      }
+  //      ++nextId;
+  //      if(nextId == modules.size()) break;
+  //    }
+  //  }
+  //}
+  ////cout << endl;
+  //cerr <<
+  //  "  # row error: "<<notInRow<<
+  //  "\n  # site error: "<<notInSite<<
+  //  "\n  # overlap error: "<<overLap<< endl;
+  ////cout << "end of check" << endl;
+  //if( notInRow!=0 || notInSite!=0 || overLap!=0 ) {
+  //  cerr <<"Check failed!!" << endl;
+  //  return false;
+  //} else {
+  //  cerr <<"Check success!!" << endl;
+  //  return true;
+  //}
 }
 double CLegal::totalDisplacement() {
   double totaldis = 0;
@@ -411,6 +491,7 @@ CLegal::CLegal(Placement& placement) : _placement(placement) {
   //double max_height = 0.0;
   //m_max_module_height = 0.0;
   //m_max_module_width = 0.0;
+  _site_bottom = placement.m_sites.front().y();
   _modules.resize(placement.numunFixed());
   int cnt = 0;
   for(unsigned  moduleId = 0 ; moduleId < placement.numModules() ; moduleId++) {
