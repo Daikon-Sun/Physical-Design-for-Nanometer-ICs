@@ -13,7 +13,7 @@
 7. How to Make:
   (1) type "make" in the current directory
   (2) a binary program "legalizer" will be generated.
-  compiler flag: g++ -std=c++14 -O3 -fopenmp -ffast-math -DUSE_OPENMP
+  compiler flag: g++ -std=c++11 -O3 -fopenmp -ffast-math -DUSE_OPENMP
 8. How to Run:
   ./<executable file> -aux <input.aux>
   p.s. After running, an output file named "input.pl" will be saved in the 
