@@ -41,8 +41,8 @@ void CLegal::mysolve() {
 
   while(*max_element(rcnt.begin(), rcnt.end()) > 0.95*tot) smooth(rcnt);
 
-  sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
-         return _placement.module(m1).y() < _placement.module(m2).y();});
+  stable_sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
+              return _placement.module(m1).y() < _placement.module(m2).y();});
   vector<vector<int>> cntxt(nRows);
   int pos = 0;
   cntxt[pos].push_back(nMods);
@@ -65,8 +65,8 @@ void CLegal::mysolve() {
   _placement.addDummyModule();
 
   for(auto& v : cntxt)
-    sort(v.begin()+1, v.end()-1, [this](int& m1, int& m2) {
-           return _placement.module(m1).x() < _placement.module(m2).x();});
+    stable_sort(v.begin()+1, v.end()-1, [this](int m1, int m2) {
+                return _placement.module(m1).x() < _placement.module(m2).x();});
   int tcnt = 0;
   for(auto& v : cntxt) {
     assert(!v.empty());
@@ -121,10 +121,11 @@ void CLegal::abacus() {
   const double& rowHeight = _placement.getRowHeight();
   const int nRows = _placement.numRows();
 
-  sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
-         return _placement.module(m1).centerX()
-                < _placement.module(m2).centerX();
-       });
+  stable_sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
+                double x1 = _placement.module(m1).centerX();
+                double x2 = _placement.module(m2).centerX();
+                return x1 < x2;
+              });
   for(const auto& mod_id : _modules) {
     auto& mod = _placement.module(mod_id);
     const double& orig_y = mod.y();
@@ -172,13 +173,12 @@ void CLegal::exact_forward() {
   const double rowHeight = _placement.getRowHeight();
   const int nRows = _placement.numRows();
 
-  sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
-         auto& p1 = _placement.module(m1);
-         auto& p2 = _placement.module(m2);
-         return p1.x()+0.5*p1.width() < p2.x()+0.5*p2.width();
-       });
-  for(size_t i = 0; i<_modules.size(); ++i) {
-    int mod_id = _modules[i];
+  stable_sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
+                double&& x1 = _placement.module(m1).centerX();
+                double&& x2 = _placement.module(m2).centerX();
+                return x1 < x2;
+             });
+  for(const int& mod_id : _modules) {
     auto& mod = _placement.module(mod_id);
     double orig_y = mod.y();
     double best_cost[2] = {numeric_limits<double>::max(),
@@ -226,15 +226,15 @@ void CLegal::exact_backward() {
   const double rowHeight = _placement.getRowHeight();
   const int nRows = _placement.numRows();
 
-  sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
-         auto& p1 = _placement.module(m1);
-         auto& p2 = _placement.module(m2);
-         return p1.x() < p2.x();
-       });
+  stable_sort(_modules.begin(), _modules.end(), [this](int m1, int m2) { 
+                double x1 = _placement.module(m1).x();
+                double x2 = _placement.module(m2).x();
+                return x1 < x2;
+             });
   reverse(_modules.begin(), _modules.end());
-  for(size_t i = 0; i<_modules.size(); ++i) {
-    int mod_id = _modules[i];
+  for(const auto& mod_id : _modules) {
     auto& mod = _placement.module(mod_id);
+    //cerr << mod_id << " " << setprecision(20) << mod.x() << endl;
     double orig_y = mod.y();
     double best_cost[2] = {numeric_limits<double>::max(),
                            numeric_limits<double>::max()};
@@ -279,12 +279,12 @@ bool CLegal::solve() {
   saveGlobalResult();
   _placement.renew_row_Width();
 #ifdef ABACUS
+  _placement.renew_row();
   abacus();
 #else
   double diss[2] = {numeric_limits<double>::max(), 
                     numeric_limits<double>::max()};
   _placement.renew_row();
-  restoreGlobal();
   exact_forward();
   diss[0] = totalDisplacement();
 
@@ -293,7 +293,7 @@ bool CLegal::solve() {
   exact_backward();
   diss[1] = totalDisplacement();
 
-  cerr << diss[0] << " " << diss[1] << endl;
+  //cerr << diss[0] << " " << diss[1] << endl;
   for(size_t i = 0; i<_bestLocs.size(); ++i) {
     auto& mod = _placement.module(i);
     if(mod.isFixed()) _bestLocs[i] = {mod.x(), mod.y()};
@@ -365,8 +365,7 @@ bool CLegal::check() {
   for(size_t i = 0; i < numRows; ++i) {
     vector<Module*> &modules = rowModules[i];
     sort(modules.begin(), modules.end(), [](Module* a, Module* b){
-          return a->x() < b->x();
-        });
+         return a->x() < b->x(); });
     if(modules.empty()) continue;
     for(size_t j = 0; j < modules.size() - 1; ++j) {
       Module &mod = *modules[ j ];

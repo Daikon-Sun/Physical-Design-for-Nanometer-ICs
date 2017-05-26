@@ -167,8 +167,8 @@ void Row::refresh_backward(Placement& _pl) {
     }
   }
 }
+#endif
 void Row::renew() {
   _space = _width;
   _clusters.clear();
 }
-#endif
