@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 PROJECT (legalization)
 
-SET(CMAKE_CXX_FLAGS "-O3 -std=c++14 -Wall -Wextra -fopenmp -ffast-math -DUSE_OPENMP")
+SET(CMAKE_CXX_FLAGS "-O3 -std=c++11 -Wall -Wextra -fopenmp -ffast-math -DUSE_OPENMP")
 
 ADD_SUBDIRECTORY(Parser)
 ADD_SUBDIRECTORY(PlaceCommon)
