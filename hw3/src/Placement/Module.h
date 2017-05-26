@@ -25,6 +25,7 @@ class Module {
   const string& name() {return _name;}
   const double& x() const {return _x;} //x coordinates
   const double& y() const {return _y;} //y coordinates //(x,y): lower-left point of the block
+  double right() const { return _x + _width; }
   const double& width() const {return _width;}
   const double& height() const {return _height;}
   const bool& isFixed() {return _isFixed;} //if fixed module, return true

@@ -23,7 +23,8 @@ class CLegal {
 #ifdef ABACUS
   void abacus();
 #else
-  void exact();
+  void exact_forward();
+  void exact_backward();
 #endif
   void mysolve();
   //Check the legalization result is overlap-free, within boundary, and on-site, "true" indicates legal
@@ -31,6 +32,7 @@ class CLegal {
   void saveGlobalResult();
   void setLegalResult();
   double totalDisplacement();
+  void restoreGlobal();
   //**********************************
   //* Information of Macros or Cells *
   //**********************************
@@ -39,6 +41,8 @@ class CLegal {
   //vector<Row> m_left_free_sites;
   //vector<CPoint> m_origLocations;	//Record the original locations
   vector<CPoint> _bestLocs;	//Record the best locations
+  vector<CPoint> _bestLocs_forward;	//Record the best locations
+  vector<CPoint> _bestLocs_backward;	//Record the best locations
   //vector<Row> m_best_sites;    //Record the resulting sites of the best result
   //vector<CPoint> bestLocs_left;
   //vector<Row> m_best_sites_left;

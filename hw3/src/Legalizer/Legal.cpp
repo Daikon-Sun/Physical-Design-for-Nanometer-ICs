@@ -3,6 +3,7 @@
 #include "GnuplotLivePlotter.h"
 #include "GnuplotMatrixPlotter.h"
 
+#include <iomanip>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -164,8 +165,8 @@ void CLegal::abacus() {
   }
 }
 #else
-extern double r;
-void CLegal::exact() {
+constexpr double rf = 0.6;
+void CLegal::exact_forward() {
   const double left_bound = _placement.boundaryLeft();
   const double bott_bound = _placement.boundaryBottom();
   const double rowHeight = _placement.getRowHeight();
@@ -189,9 +190,9 @@ void CLegal::exact() {
       int cur_row_id = mid_row_id;
       while(true) {
         auto& row = _placement.row(cur_row_id);
-        if(r * abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
+        if(rf * abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
         if(row.enough_space(mod.width())) {
-          double cur_cost = row.placeRow(mod, left_bound);
+          double cur_cost = row.placeRow_forward(mod, left_bound);
           if(cur_cost < best_cost[dr]) {
             best_cost[dr] = cur_cost;
             best_row_id[dr] = cur_row_id;
@@ -205,30 +206,113 @@ void CLegal::exact() {
     }
     assert(best_row_id[0] != -1 || best_row_id[1] != -1);
     if(best_cost[0] < best_cost[1])
-      _placement.row(best_row_id[0]).placeRow_final(mod, mod_id, left_bound);
+      _placement.row(best_row_id[0]).placeRow_final_forward(mod, mod_id,
+                                                            left_bound);
     else
-      _placement.row(best_row_id[1]).placeRow_final(mod, mod_id, left_bound);
+      _placement.row(best_row_id[1]).placeRow_final_forward(mod, mod_id,
+                                                            left_bound);
   }
   for(int i = 0; i<nRows; ++i)
-    _placement.row(i).refresh(_placement);
+    _placement.row(i).refresh_forward(_placement);
   for(const auto& mod_id : _modules) {
     const auto& mod = _placement.module(mod_id);
-    _bestLocs[mod_id] = {mod.x(), mod.y()};
+    _bestLocs_forward[mod_id] = {mod.x(), mod.y()};
+  }
+}
+constexpr double rb = 0.38;
+void CLegal::exact_backward() {
+  const double righ_bound = _placement.boundaryRight();
+  const double bott_bound = _placement.boundaryBottom();
+  const double rowHeight = _placement.getRowHeight();
+  const int nRows = _placement.numRows();
+
+  sort(_modules.begin(), _modules.end(), [this](int& m1, int& m2) { 
+         auto& p1 = _placement.module(m1);
+         auto& p2 = _placement.module(m2);
+         return p1.x() < p2.x();
+       });
+  reverse(_modules.begin(), _modules.end());
+  for(size_t i = 0; i<_modules.size(); ++i) {
+    int mod_id = _modules[i];
+    auto& mod = _placement.module(mod_id);
+    double orig_y = mod.y();
+    double best_cost[2] = {numeric_limits<double>::max(),
+                           numeric_limits<double>::max()};
+    int mid_row_id = (orig_y - bott_bound) / rowHeight + 0.5;
+    int best_row_id[2] = {-1, -1};
+    for(int dr = 0; dr<2; ++mid_row_id, ++dr) {
+      bool suc = false;
+      int cur_row_id = mid_row_id;
+      while(true) {
+        auto& row = _placement.row(cur_row_id);
+        if(rb * abs(row.y() - orig_y) >= best_cost[dr] && suc) break;
+        if(row.enough_space(mod.width())) {
+          double cur_cost = row.placeRow_backward(mod, righ_bound);
+          if(cur_cost < best_cost[dr]) {
+            best_cost[dr] = cur_cost;
+            best_row_id[dr] = cur_row_id;
+            suc = true;
+          }
+        }
+        cur_row_id += (dr ? 1 : -1);
+        if(cur_row_id < 0 || cur_row_id >= nRows) break;
+      }
+      if(mid_row_id == nRows-1) break;
+    }
+    assert(best_row_id[0] != -1 || best_row_id[1] != -1);
+    if(best_cost[0] < best_cost[1])
+      _placement.row(best_row_id[0]).placeRow_final_backward(mod, mod_id, 
+                                                             righ_bound);
+    else
+      _placement.row(best_row_id[1]).placeRow_final_backward(mod, mod_id, 
+                                                             righ_bound);
+  }
+  for(int i = 0; i<nRows; ++i)
+    _placement.row(i).refresh_backward(_placement);
+  for(const auto& mod_id : _modules) {
+    const auto& mod = _placement.module(mod_id);
+    _bestLocs_backward[mod_id] = {mod.x(), mod.y()};
   }
 }
 #endif
 bool CLegal::solve() {
   saveGlobalResult();
+  _placement.renew_row_Width();
 #ifdef ABACUS
   abacus();
 #else
-  exact();
+  double diss[2] = {numeric_limits<double>::max(), 
+                    numeric_limits<double>::max()};
+  _placement.renew_row();
+  restoreGlobal();
+  exact_forward();
+  diss[0] = totalDisplacement();
+
+  _placement.renew_row();
+  restoreGlobal();
+  exact_backward();
+  diss[1] = totalDisplacement();
+
+  cerr << diss[0] << " " << diss[1] << endl;
+  for(size_t i = 0; i<_bestLocs.size(); ++i) {
+    auto& mod = _placement.module(i);
+    if(mod.isFixed()) _bestLocs[i] = {mod.x(), mod.y()};
+    else _bestLocs[i] = (diss[0] < diss[1] ? _bestLocs_forward[i] 
+                         :_bestLocs_backward[i]);
+  }
 #endif
   setLegalResult();
   if(check()) {
     cerr << "total displacement: " << totalDisplacement() << endl;
     return true;
   } else return false;
+}
+void CLegal::restoreGlobal() {
+  for (unsigned moduleId = 0; moduleId < _placement.numModules(); moduleId++) {
+    Module &curModule = _placement.module(moduleId);
+    curModule.setX(_globLocs[moduleId].x);
+    curModule.setY(_globLocs[moduleId].y);
+  }
 }
 bool CLegal::check() {
   //cerr << "start check" << endl;
@@ -291,6 +375,7 @@ bool CLegal::check() {
         Module &modNext = *modules[ nextId ];
         if( mod.x() + mod.width() > modules[ nextId ]->x() ){
           ++overLap;
+          cerr << mod.x()+mod.width() << " " << modules[nextId]->x() << endl;
           cerr << mod.name() << " overlap with " << modNext.name() << endl;
         }
         ++nextId;
@@ -337,6 +422,8 @@ CLegal::CLegal(Placement& placement) : _placement(placement) {
     _modules[cnt++] = moduleId;
   }
   _bestLocs.resize( placement.numModules() );
+  _bestLocs_forward.resize( placement.numModules() );
+  _bestLocs_backward.resize( placement.numModules() );
   _globLocs.resize( placement.numModules() );
 }
 void CLegal::saveGlobalResult() {

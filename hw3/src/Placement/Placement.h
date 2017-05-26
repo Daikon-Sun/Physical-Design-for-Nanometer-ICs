@@ -17,7 +17,8 @@ class Placement;
 class Placement {
  public:
   Placement() : _numunFixed(0) {};
-  void renew_row_width() { for(auto& row : _rows) row.setWidth(); }
+  void renew_row_Width() { for(auto& row : _rows) row.setWidth(); }
+  void renew_row() { for(auto& row : _rows) row.renew(); }
   //void row_assert() {
   //  double h = _rows[0].height();
   //  double ss = _rows[0].siteSpacing();

@@ -12,7 +12,7 @@
   report.pdf: report in the format pdf in case of incompatible typesetting.
 7. How to Make:
   (1) type "make" in the current directory
-  (2) a binary program "main" will be generated.
+  (2) a binary program "legalizer" will be generated.
   compiler flag: g++ -std=c++14 -O3 -fopenmp -ffast-math -DUSE_OPENMP
 8. How to Run:
   ./<executable file> -aux <input.aux>

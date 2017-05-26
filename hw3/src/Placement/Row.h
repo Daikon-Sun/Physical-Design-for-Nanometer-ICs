@@ -27,14 +27,23 @@ struct Cluster {
 };
 #else
 struct Cluster2 {
-  Cluster2(Module& mod, int mod_id) : _wc(mod.width()) {
+  Cluster2(Module& mod, int mod_id, double xmax = 0) : _wc(mod.width()) {
     _modules.push_back(mod_id);
-    _xcs.insert(mod.x());
+    if(xmax) _xcs.insert(xmax - mod.right());
+    else _xcs.insert(mod.x());
     _it = _xcs.begin();
   }
   double right() { return *_it + _wc; }
-  void addMod(Module& mod, int mod_id, const double& xmin) {
+  void addMod_forward(Module& mod, int mod_id, const double& xmin) {
     double val = max(mod.x() - _wc, xmin);
+    _xcs.insert(val);
+    if(*_it == val) ++_it;
+    if(_xcs.size()%2 == 0) --_it;
+    _wc += mod.width();
+    _modules.push_back(mod_id);
+  }
+  void addMod_backward(Module& mod, int mod_id, const double& xmax) {
+    double val = max(xmax - mod.right() - _wc, 0.0);
     _xcs.insert(val);
     if(*_it == val) ++_it;
     if(_xcs.size()%2 == 0) --_it;
@@ -88,7 +97,7 @@ class Row {
   void placeRow_final(Module&, int);
   void refresh(Placement&);
 #else
-  void Collapse(const double& xmin) {
+  void Collapse_forward(const double& xmin) {
     auto& clus = _clusters.back();
     double xc = *clus._it;
     if(_clusters.size() > 1 && _clusters[_clusters.size()-2].right() > xc) {
@@ -104,12 +113,32 @@ class Row {
       clus2._modules.insert(clus2._modules.end(),
                             clus._modules.begin(), clus._modules.end());
       _clusters.pop_back();
-      //Collapse(xmin);
     }
   }
-  double placeRow(const Module&, const double&);
-  void placeRow_final(Module&, int, const double&);
-  void refresh(Placement&);
+  void Collapse_backward() {
+    auto& clus = _clusters.back();
+    double xc = *clus._it;
+    if(_clusters.size() > 1 && _clusters[_clusters.size()-2].right() > xc) {
+      auto& clus2 = _clusters[_clusters.size()-2];
+      bool pre = true;
+      for(auto& d : clus._xcs) {
+        double val = max(d - clus2._wc, 0.0);
+        clus2._xcs.insert(val);
+        if(val == *clus2._it && pre) ++clus2._it;
+        if(&d == &(*clus._it)) pre = false;
+      }
+      clus2._wc += clus._wc;
+      clus2._modules.insert(clus2._modules.end(),
+                            clus._modules.begin(), clus._modules.end());
+      _clusters.pop_back();
+    }
+  }
+  double placeRow_forward(const Module&, const double&);
+  double placeRow_backward(const Module&, const double&);
+  void placeRow_final_forward(Module&, int, const double&);
+  void placeRow_final_backward(Module&, int, const double&);
+  void refresh_forward(Placement&);
+  void refresh_backward(Placement&);
 #endif
   const double& space() { return _space; }
   bool enough_space(const double& w) { return _space >= w; }
@@ -133,7 +162,8 @@ class Row {
   void setNumSites(unsigned numSites) { _numSites = numSites; }
   void setOrient(Orient orient) { _orient = orient; }
   void setIsSymmetric(bool isSymmetric) { _isSymmetric = isSymmetric; }
-  void setWidth() { _space = _width = width(); }
+  void setWidth() { _width = width(); }
+  void renew();
 
  private:
   // variables from benchmark input
