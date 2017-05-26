@@ -45,6 +45,14 @@ int main(int argc, char *argv[]) {
   gArg.Init(argc, argv);
   if(!handleArgument( argc, argv, param )) return -1;
 
+  bool do_plot = false, do_check = false;
+  if(argc > 3) {
+    for(int i = 3; i<argc; ++i) {
+      if(!strcmp(argv[i], "--plot")) do_plot = true;
+      if(!strcmp(argv[i], "--check")) do_check = true;
+    }
+  }
+
   ::omp_set_num_threads(param.threadNum);
 
   Placement placement;
@@ -68,13 +76,13 @@ int main(int argc, char *argv[]) {
   if(param.bRunLegal) {
     //cout<<endl<<"////// Legalization ///////"<<endl;
     CLegal legal(placement);
-    legal.solve();
+    legal.solve(do_check);
     //bool bLegal = legal.solve();
 
     //if(bLegal) cout<<"legalization success!"<<endl;
     //else cout<<"legalization fail!"<<endl;
 
-    //placement.outputGnuplotFigure(placement.name()+".lg.plt");
+    if(do_plot) placement.outputGnuplotFigure(placement.name()+".lg.plt");
     placement.outputBookshelfFormat(placement.name()+".lg.pl");
     //total_legal_time = time(NULL) - legal_time_start;
     //total_time+=total_legal_time;

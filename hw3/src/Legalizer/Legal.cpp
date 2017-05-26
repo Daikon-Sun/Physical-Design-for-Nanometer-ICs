@@ -275,7 +275,7 @@ void CLegal::exact_backward() {
   }
 }
 #endif
-bool CLegal::solve() {
+bool CLegal::solve(bool do_check) {
   saveGlobalResult();
   _placement.renew_row_Width();
 #ifdef ABACUS
@@ -302,10 +302,12 @@ bool CLegal::solve() {
   }
 #endif
   setLegalResult();
-  if(check()) {
-    cerr << "total displacement: " << totalDisplacement() << endl;
-    return true;
-  } else return false;
+  if(do_check) {
+    if(check()) {
+      cerr << "total displacement: " << totalDisplacement() << endl;
+      return true;
+    } else return false;
+  } else return true;
 }
 void CLegal::restoreGlobal() {
   for (unsigned moduleId = 0; moduleId < _placement.numModules(); moduleId++) {

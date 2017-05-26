@@ -19,7 +19,7 @@ class CLegal {
   Placement& _placement;
   //GnuplotLivePlotter gnuplotLivePlotter;
   //Solve the legalization, "true" indicates success
-  bool solve();
+  bool solve(bool);
 #ifdef ABACUS
   void abacus();
 #else
