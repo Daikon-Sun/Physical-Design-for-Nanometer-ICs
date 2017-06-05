@@ -104,16 +104,15 @@ inline int calc_cost(int x0, int y0, int x1, int y1, int x2, int y2) {
   else if(x0 < mnx) rtn += mnx - x0;
   if(y0 > mxy) rtn += y0 - mxy;
   else if(y0 < mny) rtn += mny - y0;
-  return rtn + dist(x1, y1, x2, y2);
+  return rtn;
 }
 inline int calc_gain(const vector<int>& Xs, const vector<int>& Ys,
                      const int& numPins, const vector<pair<int, int>>& MBT,
                      const tuple<int, int, int, int>& t) {
   const int &w = get<0>(t), &u0 = get<0>(t), &v0 = get<2>(t), &x = get<3>(t);
   const int &u1 = MBT[x - numPins].first, &v1 = MBT[x - numPins].second;
-  return dist(Xs[u0], Ys[u0], Xs[v0], Ys[v0]) +
-         dist(Xs[u1], Ys[u1], Xs[v1], Ys[v1]) -
-         calc_cost(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[u1], Ys[u1]);
+  return dist(Xs[u1], Ys[u1], Xs[v1], Ys[v1]) -
+         calc_cost(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
 }
 int main(int argc, char** argv) {
   assert(argc <= 4);
@@ -123,11 +122,9 @@ int main(int argc, char** argv) {
   fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
   int numPins;
   fscanf(fin, "NumPins = %d\n", &numPins);
-  char** Names = new char*[numPins];
   vector<int> Xs(numPins), Ys(numPins), X_pls_Y(numPins), X_mns_Y(numPins);
   for(int i = 0; i < numPins; ++i) {
-    Names[i] = new char[100];
-    fscanf(fin, "PIN %s (%d,%d)\n", Names[i], &Xs[i], &Ys[i]);
+    fscanf(fin, "PIN %*s (%d,%d)\n", &Xs[i], &Ys[i]);
     X_pls_Y[i] = Xs[i] + Ys[i];
     X_mns_Y[i] = Xs[i] - Ys[i];
   }
@@ -201,6 +198,4 @@ int main(int argc, char** argv) {
     FILE *fplt = fopen(argv[3], "w");
     plot(fplt, Xs, Ys, edges);
   }
-  for(int i = 0; i<numPins; ++i) delete [] Names[i];
-  delete [] Names;
 }
