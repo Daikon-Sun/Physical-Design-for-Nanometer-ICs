@@ -22,12 +22,13 @@ inline void plot_rect_line(FILE *f, int x0, int y0, int x1, int y1) {
 inline LL dist(const int& x0, const int& y0, const int& x1, const int& y1) {
   return abs(x0 - x1) + abs(y0 - y1);
 }
-LL plot(FILE* f, const int& numPins,
-          const vector<int>& Xs, const vector<int>& Ys,
-          const vector<vector<bool>>& T) {
+inline LL plot(FILE* f, const int& numPins,
+               const vector<int>& Xs, const vector<int>& Ys,
+               const vector<vector<bool>>& T) {
   LL cost = 0;
   if(f) fprintf(f, "set size ratio -1\nset nokey\n");
   if(f) fprintf(f, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
+  #pragma omp parallel for reduction(+:cost)
   for(uint i = 0; i < T.size(); ++i) for(uint j = i+1; j < T.size(); ++j)
     if(T[i][j]) {
       if(f) plot_rect_line(f, Xs[i], Ys[i], Xs[j], Ys[j]);
@@ -130,9 +131,9 @@ inline int calc_gain(const vector<int>& Xs, const vector<int>& Ys,
                      const int& numPins, const vector<pair<int, int>>& Tedge,
                      const tuple<int, int, int, int, int>& t) {
   const int &w = get<0>(t), &u0 = get<1>(t), &v0 = get<2>(t), &x = get<3>(t);
-  assert(x >= numPins);
+  //assert(x >= numPins);
   const int &u1 = Tedge[x - numPins].first, &v1 = Tedge[x - numPins].second;
-  assert(u0 < numPins && v0 < numPins && u1 < numPins && v1 < numPins);
+  //assert(u0 < numPins && v0 < numPins && u1 < numPins && v1 < numPins);
   return dist(Xs[u1], Ys[u1], Xs[v1], Ys[v1]) -
          calc_cost(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
 }
@@ -178,7 +179,7 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
          return t1 < t2; });
   int edge_id = 0;
   T.clear();
-  T.resize(1.5*numPins, vector<bool>(1.5*numPins, false));
+  T.resize(1.4*numPins, vector<bool>(1.4*numPins, false));
   vector<vector<tuple<int, int, int>>> Qs(numPins);
   vector<pair<int, int>> MBT(numPins - 1), Tedge(numPins - 1);
   LL MST_cost = 0;
@@ -208,11 +209,13 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   }
   disjoint_set2 ds2(2*numPins - 1);
   vector<tuple<int, int, int, int, int>> ans;
-  ans.reserve(1.5*numPins);
+  ans.reserve(1.3*numPins);
   vector<bool> colors(2*numPins - 1);
   vector<int> ancs(2*numPins - 1, -1);
   tarjan(edge_id + numPins - 1, numPins, ds2, Qs, MBT, ancs, colors, ans);
-  for(auto &an : ans) get<4>(an) = calc_gain(Xs, Ys, numPins, Tedge, an);
+  #pragma omp parallel for
+  for(uint i = 0; i < ans.size(); ++i)
+    get<4>(ans[i]) = calc_gain(Xs, Ys, numPins, Tedge, ans[i]);
   sort(ans.begin(), ans.end(),
        [&](const tuple<int, int, int, int, int>& t1,
            const tuple<int, int, int, int, int>& t2) {
@@ -223,9 +226,9 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
     const int &w = get<0>(an), &u0 = get<1>(an), &v0 = get<2>(an);
     const int &x = get<3>(an), &u1 = Tedge[x - numPins].first;
     const int &v1 = Tedge[x - numPins].second;
-    assert(x >= numPins);
-    assert(u0 < numPins && v0 < numPins && u1 < numPins && v1 < numPins);
-    assert(T[u0][v0] == T[v0][u0] && T[u1][v1] == T[v1][u1]);
+    //assert(x >= numPins);
+    //assert(u0 < numPins && v0 < numPins && u1 < numPins && v1 < numPins);
+    //assert(T[u0][v0] == T[v0][u0] && T[u1][v1] == T[v1][u1]);
     if(!T[u0][v0] || !T[u1][v1]) continue;
     int nx, ny;
     tie(nx, ny) = gen_point(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
@@ -242,33 +245,51 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   }
   return MST_cost;
 }
-constexpr int iter = 1;
+constexpr int iter = 3;
 int main(int argc, char** argv) {
-  assert(argc <= 4);
   int MINX, MINY, MAXX, MAXY;
   FILE *fin = fopen(argv[1] ,"r");
   fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
   int numPins;
   fscanf(fin, "NumPins = %d\n", &numPins);
   vector<int> Xs(numPins), Ys(numPins), X_pls_Y(numPins), X_mns_Y(numPins);
-  Xs.reserve((iter*0.4 + 1)*numPins);
-  Ys.reserve((iter*0.4 + 1)*numPins);
-  X_pls_Y.reserve((iter*0.4 + 1)*numPins);
-  X_mns_Y.reserve((iter*0.4 + 1)*numPins);
+  Xs.reserve((iter*0.3 + 1)*numPins);
+  Ys.reserve((iter*0.3 + 1)*numPins);
+  X_pls_Y.reserve((iter*0.3 + 1)*numPins);
+  X_mns_Y.reserve((iter*0.3 + 1)*numPins);
   for(int i = 0; i < numPins; ++i) {
     fscanf(fin, "PIN %*s (%d,%d)\n", &Xs[i], &Ys[i]);
     X_pls_Y[i] = Xs[i] + Ys[i];
     X_mns_Y[i] = Xs[i] - Ys[i];
   }
   vector<vector<bool>> T;
-  for(int i = 0; i<iter; ++i) {
+  LL orig_MST_cost, MRST_cost;
+  for(int i = 0; i < iter; ++i) {
     LL MST_cost = steiner_tree(Xs, Ys, X_pls_Y, X_mns_Y, T);
+    if(!i) orig_MST_cost = MST_cost;
     FILE *fplt = (argc == 4 ? 
                   fopen((string(argv[3]) + to_string(i)).c_str(), "w") : 0);
-    LL MRST_cost = plot(fplt, numPins, Xs, Ys, T);
-    cerr << "MST  cost " << MST_cost << endl;
-    cerr << "MRST cost " << MRST_cost << endl;
-    cerr << "improvement " << double(MST_cost - MRST_cost) / MRST_cost << endl;
-    cerr << "numPins " <<  Xs.size() << endl;
+    MRST_cost = plot(fplt, numPins, Xs, Ys, T);
   }
+  FILE *fout = fopen(argv[2], "w");
+  fprintf(fout, "NumRoutedPins = %d\n", numPins);
+  fprintf(fout, "Wirelength = %d\n", MRST_cost);
+  #pragma omp parallel for
+  for(uint i = 0; i < T.size(); ++i)
+    for(uint j = i + 1; j < T.size(); ++j) if(T[i][j]) {
+      if(Xs[i] == Xs[j] && Ys[i] == Ys[j]) continue;
+      else if(Xs[i] == Xs[j]) 
+        fprintf(fout, "V-line (%d,%d) (%d,%d)\n", Xs[i], Ys[i], Xs[j], Ys[j]);
+      else if(Ys[i] == Ys[j])
+        fprintf(fout, "H-line (%d,%d) (%d,%d)\n", Xs[i], Ys[i], Xs[j], Ys[j]);
+      else {
+        fprintf(fout, "V-line (%d,%d) (%d,%d)\n", Xs[i], Ys[i], Xs[i], Ys[j]);
+        fprintf(fout, "H-line (%d,%d) (%d,%d)\n", Xs[i], Ys[j], Xs[j], Ys[j]);
+      }
+  }
+  cerr << "MST  cost " << orig_MST_cost << endl;
+  cerr << "MRST cost " << MRST_cost << endl;
+  cerr << "improvement "
+       << double(orig_MST_cost - MRST_cost) / orig_MST_cost << endl;
+  cerr << "numPins " << Xs.size() << endl;
 }
