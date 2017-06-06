@@ -82,7 +82,7 @@ struct disjoint_set2 {
 inline void tarjan(const int& u, const int& numPins, disjoint_set2& ds2, 
             vector<vector<tuple<int, int, int>>>& Qs, 
             const vector<pair<int, int>>& T, vector<int>& ancs, 
-            vector<bool>& colors, vector<tuple<int, int, int, int>>& ans) {
+            vector<bool>& colors, vector<tuple<int, int, int, int, int>>& ans) {
   ancs[u] = u;
   if(u >= numPins) {
     tarjan(T[u - numPins].first,  numPins, ds2, Qs, T, ancs, colors, ans);
@@ -94,7 +94,8 @@ inline void tarjan(const int& u, const int& numPins, disjoint_set2& ds2,
   }
   colors[u] = true;
   if(u < numPins) for(auto &Q : Qs[u])
-    ans.emplace_back(tuple_cat(Q, tie(ancs[ds2.root(get<1>(Q))])));
+    ans.emplace_back(get<0>(Q), get<1>(Q), get<2>(Q), 
+                     ancs[ds2.root(get<1>(Q))], 0);
 }
 inline int calc_cost(int x0, int y0, int x1, int y1, int x2, int y2) {
   int rtn = 0;
@@ -108,7 +109,7 @@ inline int calc_cost(int x0, int y0, int x1, int y1, int x2, int y2) {
 }
 inline int calc_gain(const vector<int>& Xs, const vector<int>& Ys,
                      const int& numPins, const vector<pair<int, int>>& MBT,
-                     const tuple<int, int, int, int>& t) {
+                     const tuple<int, int, int, int, int>& t) {
   const int &w = get<0>(t), &u0 = get<0>(t), &v0 = get<2>(t), &x = get<3>(t);
   const int &u1 = MBT[x - numPins].first, &v1 = MBT[x - numPins].second;
   return dist(Xs[u1], Ys[u1], Xs[v1], Ys[v1]) -
@@ -152,7 +153,7 @@ int main(int argc, char** argv) {
        [](const tuple<int, int, int>& t1, const tuple<int, int, int>& t2) {
          return t1 < t2; });
   int edge_id = 0;
-  vector<vector<int>> T;
+  vector<vector<bool>> T(2*numPins, vector<bool>(2*numPins));
   vector<vector<tuple<int, int, int>>> Qs(numPins);
   Qs.reserve(2 * numPins);
   vector<pair<int, int>> MBT(numPins - 1);
@@ -160,8 +161,7 @@ int main(int argc, char** argv) {
     int &u = get<1>(edge), &v = get<2>(edge);
     int ru = ds1.root(u), rv = ds1.root(v);
     if(ru != rv) {
-      T[u].push_back(v);
-      T[v].push_back(u);
+      T[u][v] = T[v][u] = true;
       for(int& w : adj[u]) if(w != v) {
         if(ds1.same(ru, w)) 
           Qs[w].emplace_back(u, u, v), Qs[u].emplace_back(w, u, v);
@@ -180,19 +180,21 @@ int main(int argc, char** argv) {
     }
   }
   disjoint_set2 ds2(2*numPins - 1);
-  vector<tuple<int, int, int, int>> ans;
+  vector<tuple<int, int, int, int, int>> ans;
   ans.reserve(2*numPins);
   vector<bool> colors(2*numPins - 1);
   vector<int> ancs(2*numPins - 1);
   tarjan(edge_id + numPins - 1, numPins, ds2, Qs, MBT, ancs, colors, ans);
+  for(auto & an : ans) get<4>(an) = calc_gain(Xs, Ys, numPins, MBT, an);
   sort(ans.begin(), ans.end(),
-       [&](const tuple<int, int, int, int>& t1,
-           const tuple<int, int, int, int>& t2) {
-         return calc_gain(Xs, Ys, numPins, MBT, t1) > 
-                calc_gain(Xs, Ys, numPins, MBT, t2);
+       [&](const tuple<int, int, int, int, int>& t1,
+           const tuple<int, int, int, int, int>& t2) {
+         return get<4>(t1) > get<4>(t2);
        });
-  int total = 0;
+  int total = 0, Tcnt = 0;
   for(auto & an : ans) {
+    if(get<4>(an) <= 0) break;
+
   }
   if(argc == 4) {
     FILE *fplt = fopen(argv[3], "w");
