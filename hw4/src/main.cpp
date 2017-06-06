@@ -9,6 +9,7 @@
 #include <vector>
 
 using namespace std;
+typedef long long LL;
 
 inline void plot_rect_line(FILE *f, int x0, int y0, int x1, int y1) {
   if(x0 == x1 || y0 == y1)
@@ -18,27 +19,32 @@ inline void plot_rect_line(FILE *f, int x0, int y0, int x1, int y1) {
     fprintf(f, "set arrow from %d,%d to %d,%d nohead\n", x0, y1, x1, y1); 
   }
 }
-void plot(FILE* f, const int& numPins,
+inline LL dist(const int& x0, const int& y0, const int& x1, const int& y1) {
+  return abs(x0 - x1) + abs(y0 - y1);
+}
+LL plot(FILE* f, const int& numPins,
           const vector<int>& Xs, const vector<int>& Ys,
           const vector<vector<bool>>& T) {
-  fprintf(f, "set size ratio -1\nset nokey\n");
-  fprintf(f, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
+  LL cost = 0;
+  if(f) fprintf(f, "set size ratio -1\nset nokey\n");
+  if(f) fprintf(f, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
   for(uint i = 0; i < T.size(); ++i) for(uint j = i+1; j < T.size(); ++j)
-    if(T[i][j])
-      plot_rect_line(f, Xs[i], Ys[i], Xs[j], Ys[j]);
-  //for(uint i = 0; i < Xs.size(); ++i)
-  //  fprintf(f, "set label \"(%d,%d)\" at %d,%d\n", 
-  //          Xs[i], Ys[i], Xs[i]+1, Ys[i]);
-  fprintf(f, "set style line 1 lc rgb 'blue' pt 5\n");
-  fprintf(f, "set style line 2 lc rgb 'red' pt 7\n");
-  fprintf(f, "plot '-' w p ls 1, '-' w p ls 2\n");
-  for(int i = 0; i < numPins; ++i) fprintf(f, "%d %d\n", Xs[i], Ys[i]);
-  fprintf(f, "e\n");
-  for(uint i = numPins; i < Xs.size(); ++i) fprintf(f, "%d %d\n", Xs[i], Ys[i]);
-  fprintf(f, "e\npause -1\n");
-}
-inline int dist(const int& x0, const int& y0, const int& x1, const int& y1) {
-  return abs(x0 - x1) + abs(y0 - y1);
+    if(T[i][j]) {
+      if(f) plot_rect_line(f, Xs[i], Ys[i], Xs[j], Ys[j]);
+      cost += dist(Xs[i], Ys[i], Xs[j], Ys[j]);
+    }
+  if(f) for(uint i = 0; i < Xs.size(); ++i)
+    fprintf(f, "set label \"%d\" at %d,%d\n", i, Xs[i] + 1, Ys[i]);
+  if(f) {
+    fprintf(f, "set style line 1 lc rgb 'blue' pt 5\n");
+    fprintf(f, "set style line 2 lc rgb 'red' pt 7\n");
+    fprintf(f, "plot '-' w p ls 1, '-' w p ls 2\n");
+    for(int i = 0; i < numPins; ++i) fprintf(f, "%d %d\n", Xs[i], Ys[i]);
+    fprintf(f, "e\n");
+    for(uint i = numPins; i < Xs.size(); ++i) fprintf(f, "%d %d\n", Xs[i], Ys[i]);
+    fprintf(f, "e\npause -1\n");
+  }
+  return cost;
 }
 template<typename Set_Comp, typename Val_Comp>
 inline void span(const vector<int>& Xs, const vector<int>& Ys,
@@ -46,7 +52,7 @@ inline void span(const vector<int>& Xs, const vector<int>& Ys,
                  Set_Comp set_comp, Val_Comp val_comp,
                  vector<tuple<int, int, int>>& edges,
                  vector<vector<int>>& adj, bool upp) {
-  set<int, decltype(set_comp)> R(set_comp);
+  multiset<int, decltype(set_comp)> R(set_comp);
   for(auto& p : ord) {
     if(!R.empty()) {
       auto head = (upp ? R.upper_bound(p) : R.lower_bound(p));
@@ -93,15 +99,15 @@ struct disjoint_set2 {
 };
 inline void tarjan(const int& u, const int& numPins, disjoint_set2& ds2, 
             vector<vector<tuple<int, int, int>>>& Qs, 
-            const vector<pair<int, int>>& T, vector<int>& ancs, 
+            const vector<pair<int, int>>& MBT, vector<int>& ancs, 
             vector<bool>& colors, vector<tuple<int, int, int, int, int>>& ans) {
   ancs[u] = u;
   if(u >= numPins) {
-    tarjan(T[u - numPins].first,  numPins, ds2, Qs, T, ancs, colors, ans);
-    ds2.unite(u, T[u - numPins].first);
+    tarjan(MBT[u - numPins].first,  numPins, ds2, Qs, MBT, ancs, colors, ans);
+    ds2.unite(u, MBT[u - numPins].first);
     ancs[ds2.root(u)] = u;
-    tarjan(T[u - numPins].second, numPins, ds2, Qs, T, ancs, colors, ans);
-    ds2.unite(u, T[u - numPins].second);
+    tarjan(MBT[u - numPins].second, numPins, ds2, Qs, MBT, ancs, colors, ans);
+    ds2.unite(u, MBT[u - numPins].second);
     ancs[ds2.root(u)] = u;
   }
   colors[u] = true;
@@ -146,26 +152,13 @@ inline pair<int, int> gen_point(int x0, int y0, int x1, int y1, int x2, int y2) 
   else rtny = y0;
   return {rtnx, rtny};
 }
-int main(int argc, char** argv) {
-  assert(argc <= 4);
-  //parsing
-  int MINX, MINY, MAXX, MAXY;
-  FILE *fin = fopen(argv[1] ,"r");
-  fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
-  int numPins;
-  fscanf(fin, "NumPins = %d\n", &numPins);
-  vector<int> Xs(numPins), Ys(numPins), X_pls_Y(numPins), X_mns_Y(numPins);
-  Xs.reserve(2*numPins);
-  Ys.reserve(2*numPins);
-  for(int i = 0; i < numPins; ++i) {
-    fscanf(fin, "PIN %*s (%d,%d)\n", &Xs[i], &Ys[i]);
-    X_pls_Y[i] = Xs[i] + Ys[i];
-    X_mns_Y[i] = Xs[i] - Ys[i];
-  }
+inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
+                          vector<int>& X_mns_Y, vector<vector<bool>>& T) {
+  int numPins = (int)Xs.size();
   //construct spanning graph
   vector<tuple<int, int, int>> edges;
   vector<vector<int>> adj(numPins);
-  edges.reserve(numPins * 5);
+  edges.reserve(numPins * 3);
   vector<int> ord_pls(numPins), ord_mns(numPins);
   iota(ord_pls.begin(), ord_pls.end(), 0);
   iota(ord_mns.begin(), ord_mns.end(), 0);
@@ -186,13 +179,16 @@ int main(int argc, char** argv) {
        [](const tuple<int, int, int>& t1, const tuple<int, int, int>& t2) {
          return t1 < t2; });
   int edge_id = 0;
-  vector<vector<bool>> T(2*numPins, vector<bool>(2*numPins));
+  T.clear();
+  T.resize(1.5*numPins, vector<bool>(1.5*numPins, false));
   vector<vector<tuple<int, int, int>>> Qs(numPins);
   vector<pair<int, int>> MBT(numPins - 1), Tedge(numPins - 1);
+  LL MST_cost = 0;
   for(auto& edge : edges) {
     int &u = get<1>(edge), &v = get<2>(edge);
     int ru = ds1.root(u), rv = ds1.root(v);
     if(ru != rv) {
+      MST_cost += dist(Xs[u], Ys[u], Xs[v], Ys[v]);
       T[u][v] = T[v][u] = true;
       for(int& w : adj[u]) if(w != v) {
         if(ds1.same(ru, w)) 
@@ -214,7 +210,7 @@ int main(int argc, char** argv) {
   }
   disjoint_set2 ds2(2*numPins - 1);
   vector<tuple<int, int, int, int, int>> ans;
-  ans.reserve(2*numPins);
+  ans.reserve(1.5*numPins);
   vector<bool> colors(2*numPins - 1);
   vector<int> ancs(2*numPins - 1, -1);
   tarjan(edge_id + numPins - 1, numPins, ds2, Qs, MBT, ancs, colors, ans);
@@ -233,19 +229,48 @@ int main(int argc, char** argv) {
     assert(u0 < numPins && v0 < numPins && u1 < numPins && v1 < numPins);
     assert(T[u0][v0] == T[v0][u0] && T[u1][v1] == T[v1][u1]);
     if(!T[u0][v0] || !T[u1][v1]) continue;
-    T[u0][v0] = T[v0][u0] = T[u1][v1] = T[v1][u1] = false;
     int nx, ny;
     tie(nx, ny) = gen_point(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
     if(nx != INT_MIN && ny != INT_MIN) {
       Xs.push_back(nx);
       Ys.push_back(ny);
+      X_pls_Y.push_back(nx + ny);
+      X_mns_Y.push_back(nx - ny);
+      T[u0][v0] = T[v0][u0] = T[u1][v1] = T[v1][u1] = false;
       T[Tcnt][w] = T[w][Tcnt] = T[Tcnt][u0] = T[u0][Tcnt] = true;
       T[Tcnt][v0] = T[v0][Tcnt] = true;
       ++Tcnt;
     }
   }
-  if(argc == 4) {
-    FILE *fplt = fopen(argv[3], "w");
-    plot(fplt, numPins, Xs, Ys, T);
+  return MST_cost;
+}
+constexpr int iter = 1;
+int main(int argc, char** argv) {
+  assert(argc <= 4);
+  int MINX, MINY, MAXX, MAXY;
+  FILE *fin = fopen(argv[1] ,"r");
+  fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
+  int numPins;
+  fscanf(fin, "NumPins = %d\n", &numPins);
+  vector<int> Xs(numPins), Ys(numPins), X_pls_Y(numPins), X_mns_Y(numPins);
+  Xs.reserve((iter*0.4 + 1)*numPins);
+  Ys.reserve((iter*0.4 + 1)*numPins);
+  X_pls_Y.reserve((iter*0.4 + 1)*numPins);
+  X_mns_Y.reserve((iter*0.4 + 1)*numPins);
+  for(int i = 0; i < numPins; ++i) {
+    fscanf(fin, "PIN %*s (%d,%d)\n", &Xs[i], &Ys[i]);
+    X_pls_Y[i] = Xs[i] + Ys[i];
+    X_mns_Y[i] = Xs[i] - Ys[i];
+  }
+  vector<vector<bool>> T;
+  for(int i = 0; i<iter; ++i) {
+    LL MST_cost = steiner_tree(Xs, Ys, X_pls_Y, X_mns_Y, T);
+    FILE *fplt = (argc == 4 ? 
+                  fopen((string(argv[3]) + to_string(i)).c_str(), "w") : 0);
+    LL MRST_cost = plot(fplt, numPins, Xs, Ys, T);
+    cerr << "MST  cost " << MST_cost << endl;
+    cerr << "MRST cost " << MRST_cost << endl;
+    cerr << "improvement " << double(MST_cost - MRST_cost) / MRST_cost << endl;
+    cerr << "numPins " <<  Xs.size() << endl;
   }
 }
