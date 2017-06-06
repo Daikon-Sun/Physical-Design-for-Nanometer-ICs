@@ -120,8 +120,7 @@ inline void tarjan(const U& u, const U& numPins, disjoint_set2<U>& ds2,
   }
 }
 inline int calc_cost(int x0, int y0, int x1, int y1, int x2, int y2) {
-  int rtn = 0;
-  int mxx = max(x1, x2), mnx = min(x1, x2);
+  int rtn = 0, mxx = max(x1, x2), mnx = min(x1, x2);
   int mxy = max(y1, y2), mny = min(y1, y2);
   if(x0 > mxx) rtn += x0 - mxx;
   else if(x0 < mnx) rtn += mnx - x0;
@@ -133,9 +132,9 @@ template<typename U>
 inline int calc_gain(const vector<int>& Xs, const vector<int>& Ys,
                      const U& numPins, const vector<pair<U, U>>& Tedge,
                      const tuple<U, U, U, U, int>& t) {
-  const int &w = get<0>(t), &u0 = get<1>(t), &v0 = get<2>(t), &x = get<3>(t);
+  const U &w = get<0>(t), &u0 = get<1>(t), &v0 = get<2>(t), &x = get<3>(t);
   //assert(x >= numPins);
-  const int &u1 = Tedge[x - numPins].first, &v1 = Tedge[x - numPins].second;
+  const U &u1 = Tedge[x - numPins].first, &v1 = Tedge[x - numPins].second;
   //assert(u0 < numPins && v0 < numPins && u1 < numPins && v1 < numPins);
   return dist(Xs[u1], Ys[u1], Xs[v1], Ys[v1]) -
          calc_cost(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
@@ -161,7 +160,7 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   //construct spanning graph
   vector<tuple<int, U, U>> edges;
   vector<vector<U>> adj(numPins);
-  edges.reserve(numPins * 3);
+  edges.reserve(3 * numPins);
   vector<U> ord_pls(numPins), ord_mns(numPins);
   iota(ord_pls.begin(), ord_pls.end(), 0);
   iota(ord_mns.begin(), ord_mns.end(), 0);
@@ -180,7 +179,7 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   disjoint_set1<U> ds1(2*numPins - 1); 
   sort(edges.begin(), edges.end(), 
        [](const tuple<int, U, U>& t1, const tuple<int, U, U>& t2) {
-         return t1 < t2; });
+         return get<0>(t1) < get<0>(t2); });
   U edge_id = 0;
   T.clear();
   T.resize(1.4*numPins, vector<bool>(1.4*numPins, false));
@@ -224,12 +223,12 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
        [&](const tuple<U, U, U, U, int>& t1,
            const tuple<U, U, U, U, int>& t2) {
          return get<4>(t1) > get<4>(t2); });
-  int Tcnt = numPins;
+  U Tcnt = numPins;
   for(auto &an : ans) {
     if(get<4>(an) <= 0) break;
-    const U&w = get<0>(an), &u0 = get<1>(an), &v0 = get<2>(an);
-    const U&x = get<3>(an), &u1 = Tedge[x - numPins].first;
-    const U&v1 = Tedge[x - numPins].second;
+    const U &w = get<0>(an), &u0 = get<1>(an), &v0 = get<2>(an);
+    const U &x = get<3>(an), &u1 = Tedge[x - numPins].first;
+    const U &v1 = Tedge[x - numPins].second;
     //assert(x >= numPins);
     //assert(u0 < numPins && v0 < numPins && u1 < numPins && v1 < numPins);
     //assert(T[u0][v0] == T[v0][u0] && T[u1][v1] == T[v1][u1]);
@@ -266,8 +265,8 @@ int main(int argc, char** argv) {
     X_pls_Y[i] = Xs[i] + Ys[i];
     X_mns_Y[i] = Xs[i] - Ys[i];
   }
-  bool use_short = (3 * numPins >= (256/2));
-  bool use_int = (3 * numPins >= (65536/2));
+  bool use_short = (6 * numPins >= 255);
+  bool use_int = (6 * numPins >= 65535);
   //use_int = true;
   vector<vector<bool>> T;
   LL orig_MST_cost, MRST_cost;
