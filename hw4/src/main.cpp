@@ -33,8 +33,6 @@ LL plot(FILE* f, const int& numPins,
       if(f) plot_rect_line(f, Xs[i], Ys[i], Xs[j], Ys[j]);
       cost += dist(Xs[i], Ys[i], Xs[j], Ys[j]);
     }
-  if(f) for(uint i = 0; i < Xs.size(); ++i)
-    fprintf(f, "set label \"%d\" at %d,%d\n", i, Xs[i] + 1, Ys[i]);
   if(f) {
     fprintf(f, "set style line 1 lc rgb 'blue' pt 5\n");
     fprintf(f, "set style line 2 lc rgb 'red' pt 7\n");
