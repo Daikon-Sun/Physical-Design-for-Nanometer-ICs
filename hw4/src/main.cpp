@@ -93,9 +93,12 @@ inline void tarjan(const int& u, const int& numPins, disjoint_set2& ds2,
     ancs[ds2.root(u)] = u;
   }
   colors[u] = true;
-  if(u < numPins) for(auto &Q : Qs[u])
-    ans.emplace_back(get<0>(Q), get<1>(Q), get<2>(Q), 
-                     ancs[ds2.root(get<1>(Q))], 0);
+  if(u < numPins) for(auto &Q : Qs[u]) if(colors[get<0>(Q)]) {
+    if(u == get<1>(Q))
+      ans.emplace_back(get<0>(Q), get<1>(Q), get<2>(Q),
+                       ancs[ds2.root(get<0>(Q))], 0);
+    else ans.emplace_back(u, get<1>(Q), get<2>(Q), ancs[ds2.root(get<0>(Q))], 0);
+  }
 }
 inline int calc_cost(int x0, int y0, int x1, int y1, int x2, int y2) {
   int rtn = 0;
@@ -155,7 +158,6 @@ int main(int argc, char** argv) {
   int edge_id = 0;
   vector<vector<bool>> T(2*numPins, vector<bool>(2*numPins));
   vector<vector<tuple<int, int, int>>> Qs(numPins);
-  Qs.reserve(2 * numPins);
   vector<pair<int, int>> MBT(numPins - 1);
   for(auto& edge : edges) {
     int &u = get<1>(edge), &v = get<2>(edge);
@@ -183,18 +185,20 @@ int main(int argc, char** argv) {
   vector<tuple<int, int, int, int, int>> ans;
   ans.reserve(2*numPins);
   vector<bool> colors(2*numPins - 1);
-  vector<int> ancs(2*numPins - 1);
+  vector<int> ancs(2*numPins - 1, -1);
   tarjan(edge_id + numPins - 1, numPins, ds2, Qs, MBT, ancs, colors, ans);
-  for(auto & an : ans) get<4>(an) = calc_gain(Xs, Ys, numPins, MBT, an);
+  for(auto &an : ans) get<4>(an) = calc_gain(Xs, Ys, numPins, MBT, an);
   sort(ans.begin(), ans.end(),
        [&](const tuple<int, int, int, int, int>& t1,
            const tuple<int, int, int, int, int>& t2) {
          return get<4>(t1) > get<4>(t2);
        });
-  int total = 0, Tcnt = 0;
-  for(auto & an : ans) {
+  int total = 0, Tcnt = numPins;
+  for(auto &an : ans) {
     if(get<4>(an) <= 0) break;
-
+    const int &w = get<0>(an), &u0 = get<0>(an), &v0 = get<2>(an);
+    const int &x = get<3>(an), &u1 = MBT[x - numPins].first;
+    const int &v1 = MBT[x - numPins].second;
   }
   if(argc == 4) {
     FILE *fplt = fopen(argv[3], "w");
