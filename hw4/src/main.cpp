@@ -22,7 +22,8 @@ inline void plot_rect_line(FILE *f, int x0, int y0, int x1, int y1) {
 inline LL dist(const int& x0, const int& y0, const int& x1, const int& y1) {
   return abs(x0 - x1) + abs(y0 - y1);
 }
-inline LL plot(FILE* f, const int& numPins,
+template<typename U>
+inline LL plot(FILE* f, const U& numPins,
                const vector<int>& Xs, const vector<int>& Ys,
                const vector<vector<bool>>& T) {
   LL cost = 0;
@@ -45,12 +46,12 @@ inline LL plot(FILE* f, const int& numPins,
   }
   return cost;
 }
-template<typename Set_Comp, typename Val_Comp>
+template<typename Set_Comp, typename Val_Comp, typename U>
 inline void span(const vector<int>& Xs, const vector<int>& Ys,
-                 const vector<int>& ord, const vector<int>& X_Y,
+                 const vector<U>& ord, const vector<int>& X_Y,
                  Set_Comp set_comp, Val_Comp val_comp,
-                 vector<tuple<int, int, int>>& edges,
-                 vector<vector<int>>& adj, bool upp) {
+                 vector<tuple<int, U, U>>& edges,
+                 vector<vector<U>>& adj, bool upp) {
   multiset<int, decltype(set_comp)> R(set_comp);
   for(auto& p : ord) {
     if(!R.empty()) {
@@ -65,10 +66,10 @@ inline void span(const vector<int>& Xs, const vector<int>& Ys,
     R.insert(p);
   }
 }
-struct disjoint_set1 {
+template<typename U> struct disjoint_set1 {
   disjoint_set1(int N) : par(N, -1) {}
-  int root(int a) { return par[a] < 0 ? a : par[a] = root(par[a]); }
-  int unite(int a, int b) {
+  U root(U a) { return par[a] < 0 ? a : par[a] = root(par[a]); }
+  U unite(U a, U b) {
     a = root(a);
     b = root(b);
     if(a == b) return a;
@@ -77,14 +78,14 @@ struct disjoint_set1 {
     par[a] = b;
     return b;
   }
-  bool same(int a, int b) { return root(a) == root(b); }
-  int size(int a) { return -par[a]; }
-  vector<int> par;
+  bool same(U a, U b) { return root(a) == root(b); }
+  U size(U a) { return -par[a]; }
+  vector<U> par;
 };
-struct disjoint_set2 {
+template<typename U> struct disjoint_set2 {
   disjoint_set2(int N) : par(N, -1) {}
-  int root(int a) { return par[a] < 0 ? a : par[a] = root(par[a]); }
-  void unite(int a, int b) {
+  U root(U a) { return par[a] < 0 ? a : par[a] = root(par[a]); }
+  void unite(U a, U b) {
     a = root(a);
     b = root(b);
     if(a == b) return;
@@ -92,14 +93,15 @@ struct disjoint_set2 {
     par[b] += par[a];
     par[a] = b;
   }
-  bool same(int a, int b) { return root(a) == root(b); }
-  int size(int a) { return -par[a]; }
-  vector<int> par;
+  bool same(U a, U b) { return root(a) == root(b); }
+  U size(U a) { return -par[a]; }
+  vector<U> par;
 };
-inline void tarjan(const int& u, const int& numPins, disjoint_set2& ds2, 
-            vector<vector<tuple<int, int, int>>>& Qs, 
-            const vector<pair<int, int>>& MBT, vector<int>& ancs, 
-            vector<bool>& colors, vector<tuple<int, int, int, int, int>>& ans) {
+template<typename U>
+inline void tarjan(const U& u, const U& numPins, disjoint_set2<U>& ds2, 
+            vector<vector<tuple<U, U, U>>>& Qs, 
+            const vector<pair<U, U>>& MBT, vector<U>& ancs, 
+            vector<bool>& colors, vector<tuple<U, U, U, U, int>>& ans) {
   ancs[u] = u;
   if(u >= numPins) {
     tarjan(MBT[u - numPins].first,  numPins, ds2, Qs, MBT, ancs, colors, ans);
@@ -127,9 +129,10 @@ inline int calc_cost(int x0, int y0, int x1, int y1, int x2, int y2) {
   else if(y0 < mny) rtn += mny - y0;
   return rtn;
 }
+template<typename U>
 inline int calc_gain(const vector<int>& Xs, const vector<int>& Ys,
-                     const int& numPins, const vector<pair<int, int>>& Tedge,
-                     const tuple<int, int, int, int, int>& t) {
+                     const U& numPins, const vector<pair<U, U>>& Tedge,
+                     const tuple<U, U, U, U, int>& t) {
   const int &w = get<0>(t), &u0 = get<1>(t), &v0 = get<2>(t), &x = get<3>(t);
   //assert(x >= numPins);
   const int &u1 = Tedge[x - numPins].first, &v1 = Tedge[x - numPins].second;
@@ -151,51 +154,52 @@ inline pair<int, int> gen_point(int x0, int y0, int x1, int y1, int x2, int y2) 
   else rtny = y0;
   return {rtnx, rtny};
 }
+template<typename U>
 inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
                           vector<int>& X_mns_Y, vector<vector<bool>>& T) {
-  int numPins = (int)Xs.size();
+  U numPins = (U)Xs.size();
   //construct spanning graph
-  vector<tuple<int, int, int>> edges;
-  vector<vector<int>> adj(numPins);
+  vector<tuple<int, U, U>> edges;
+  vector<vector<U>> adj(numPins);
   edges.reserve(numPins * 3);
-  vector<int> ord_pls(numPins), ord_mns(numPins);
+  vector<U> ord_pls(numPins), ord_mns(numPins);
   iota(ord_pls.begin(), ord_pls.end(), 0);
   iota(ord_mns.begin(), ord_mns.end(), 0);
-  sort(ord_pls.begin(), ord_pls.end(), [&](int& p1, int& p2) {
+  sort(ord_pls.begin(), ord_pls.end(), [&](U& p1, U& p2) {
          return X_pls_Y[p1] < X_pls_Y[p2]; });
-  sort(ord_mns.begin(), ord_mns.end(), [&](int& p1, int& p2) {
+  sort(ord_mns.begin(), ord_mns.end(), [&](U& p1, U& p2) {
          return X_mns_Y[p1] < X_mns_Y[p2]; });
-  auto grtr_x = [&](const int& p1, const int& p2) { return Xs[p1] > Xs[p2]; };
-  auto grtr_y = [&](const int& p1, const int& p2) { return Ys[p1] > Ys[p2]; };
-  auto less_y = [&](const int& p1, const int& p2) { return Ys[p1] < Ys[p2]; };
+  auto grtr_x = [&](const U& p1, const U& p2) { return Xs[p1] > Xs[p2]; };
+  auto grtr_y = [&](const U& p1, const U& p2) { return Ys[p1] > Ys[p2]; };
+  auto less_y = [&](const U& p1, const U& p2) { return Ys[p1] < Ys[p2]; };
   span(Xs, Ys, ord_pls, X_mns_Y, grtr_x, greater<int>(), edges, adj, false);
   span(Xs, Ys, ord_pls, X_mns_Y, grtr_y, less_equal<int>(), edges, adj, true);
   span(Xs, Ys, ord_mns, X_pls_Y, less_y, less<int>(), edges, adj, false);
   span(Xs, Ys, ord_mns, X_pls_Y, grtr_x, greater_equal<int>(), edges, adj, true);
   //construct steiner-tree
-  disjoint_set1 ds1(2*numPins - 1); 
+  disjoint_set1<U> ds1(2*numPins - 1); 
   sort(edges.begin(), edges.end(), 
-       [](const tuple<int, int, int>& t1, const tuple<int, int, int>& t2) {
+       [](const tuple<int, U, U>& t1, const tuple<int, U, U>& t2) {
          return t1 < t2; });
-  int edge_id = 0;
+  U edge_id = 0;
   T.clear();
   T.resize(1.4*numPins, vector<bool>(1.4*numPins, false));
-  vector<vector<tuple<int, int, int>>> Qs(numPins);
-  vector<pair<int, int>> MBT(numPins - 1), Tedge(numPins - 1);
+  vector<vector<tuple<U, U, U>>> Qs(numPins);
+  vector<pair<U, U>> MBT(numPins - 1), Tedge(numPins - 1);
   LL MST_cost = 0;
   for(auto& edge : edges) {
-    int &u = get<1>(edge), &v = get<2>(edge);
-    int ru = ds1.root(u), rv = ds1.root(v);
+    U &u = get<1>(edge), &v = get<2>(edge);
+    U ru = ds1.root(u), rv = ds1.root(v);
     if(ru != rv) {
       MST_cost += dist(Xs[u], Ys[u], Xs[v], Ys[v]);
       T[u][v] = T[v][u] = true;
-      for(int& w : adj[u]) if(w != v) {
+      for(auto& w : adj[u]) if(w != v) {
         if(ds1.same(ru, w)) 
           Qs[w].emplace_back(u, u, v), Qs[u].emplace_back(w, u, v);
         else if(ds1.same(rv, w)) 
           Qs[w].emplace_back(v, v, u), Qs[v].emplace_back(w, v, u);
       }
-      for(int& w : adj[v]) if(w != u) {
+      for(auto& w : adj[v]) if(w != u) {
         if(ds1.same(ru, w)) 
           Qs[w].emplace_back(u, u, v), Qs[u].emplace_back(w, u, v);
         else if(ds1.same(rv, w)) 
@@ -207,25 +211,25 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
       ++edge_id;
     }
   }
-  disjoint_set2 ds2(2*numPins - 1);
-  vector<tuple<int, int, int, int, int>> ans;
+  disjoint_set2<U> ds2(2*numPins - 1);
+  vector<tuple<U, U, U, U, int>> ans;
   ans.reserve(1.3*numPins);
   vector<bool> colors(2*numPins - 1);
-  vector<int> ancs(2*numPins - 1, -1);
-  tarjan(edge_id + numPins - 1, numPins, ds2, Qs, MBT, ancs, colors, ans);
+  vector<U> ancs(2*numPins - 1, -1);
+  tarjan(U(edge_id + numPins - 1), numPins, ds2, Qs, MBT, ancs, colors, ans);
   #pragma omp parallel for
   for(uint i = 0; i < ans.size(); ++i)
     get<4>(ans[i]) = calc_gain(Xs, Ys, numPins, Tedge, ans[i]);
   sort(ans.begin(), ans.end(),
-       [&](const tuple<int, int, int, int, int>& t1,
-           const tuple<int, int, int, int, int>& t2) {
+       [&](const tuple<U, U, U, U, int>& t1,
+           const tuple<U, U, U, U, int>& t2) {
          return get<4>(t1) > get<4>(t2); });
   int Tcnt = numPins;
   for(auto &an : ans) {
     if(get<4>(an) <= 0) break;
-    const int &w = get<0>(an), &u0 = get<1>(an), &v0 = get<2>(an);
-    const int &x = get<3>(an), &u1 = Tedge[x - numPins].first;
-    const int &v1 = Tedge[x - numPins].second;
+    const U&w = get<0>(an), &u0 = get<1>(an), &v0 = get<2>(an);
+    const U&x = get<3>(an), &u1 = Tedge[x - numPins].first;
+    const U&v1 = Tedge[x - numPins].second;
     //assert(x >= numPins);
     //assert(u0 < numPins && v0 < numPins && u1 < numPins && v1 < numPins);
     //assert(T[u0][v0] == T[v0][u0] && T[u1][v1] == T[v1][u1]);
@@ -262,10 +266,19 @@ int main(int argc, char** argv) {
     X_pls_Y[i] = Xs[i] + Ys[i];
     X_mns_Y[i] = Xs[i] - Ys[i];
   }
+  bool use_short = (3 * numPins >= (256/2));
+  bool use_int = (3 * numPins >= (65536/2));
+  //use_int = true;
   vector<vector<bool>> T;
   LL orig_MST_cost, MRST_cost;
   for(int i = 0; i < iter; ++i) {
-    LL MST_cost = steiner_tree(Xs, Ys, X_pls_Y, X_mns_Y, T);
+    LL MST_cost;
+    if(use_int)
+      MST_cost = steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, T);
+    else if(use_short)
+      MST_cost = steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, T);
+    else
+      MST_cost = steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y, T);
     if(!i) orig_MST_cost = MST_cost;
     FILE *fplt = (argc == 4 ? 
                   fopen((string(argv[3]) + to_string(i)).c_str(), "w") : 0);
@@ -273,7 +286,7 @@ int main(int argc, char** argv) {
   }
   FILE *fout = fopen(argv[2], "w");
   fprintf(fout, "NumRoutedPins = %d\n", numPins);
-  fprintf(fout, "Wirelength = %d\n", MRST_cost);
+  fprintf(fout, "Wirelength = %lld\n", MRST_cost);
   #pragma omp parallel for
   for(uint i = 0; i < T.size(); ++i)
     for(uint j = i + 1; j < T.size(); ++j) if(T[i][j]) {
