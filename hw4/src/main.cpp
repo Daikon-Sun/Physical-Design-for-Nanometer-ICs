@@ -22,6 +22,9 @@ inline void plot_rect_line(FILE *f, int x0, int y0, int x1, int y1) {
 inline LL dist(const int& x0, const int& y0, const int& x1, const int& y1) {
   return abs(x0 - x1) + abs(y0 - y1);
 }
+inline double dist2(const int& x0, const int& y0, const int& x1, const int& y1) {
+  return (x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1);
+}
 template<typename U> inline LL plot(FILE* f, const U& numPins,
                const vector<int>& Xs, const vector<int>& Ys,
                const vector<vector<bool>>& T) {
@@ -177,8 +180,9 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   //construct steiner-tree
   disjoint_set1<U> ds1(2*numPins - 1); 
   sort(edges.begin(), edges.end(), 
-       [](const tuple<int, U, U>& t1, const tuple<int, U, U>& t2) {
-         return get<0>(t1) < get<0>(t2); });
+       [&](const tuple<int, U, U>& t0, const tuple<int, U, U>& t1) {
+       return get<0>(t0) > get<0>(t1); });
+  reverse(edges.begin(), edges.end());
   U edge_id = 0;
   T.clear();
   T.resize(1.4*numPins, vector<bool>(1.4*numPins, false));
