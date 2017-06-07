@@ -200,12 +200,20 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
           Qs[w].emplace_back(u, u, v), Qs[u].emplace_back(w, u, v);
         else if(ds1.same(rv, w)) 
           Qs[w].emplace_back(v, v, u), Qs[v].emplace_back(w, v, u);
+        else {
+          Qs[w].emplace_back(u, u, v), Qs[u].emplace_back(w, u, v);
+          Qs[w].emplace_back(v, v, u), Qs[v].emplace_back(w, v, u);
+        }
       }
       for(auto& w : adj[v]) if(w != u) {
         if(ds1.same(ru, w)) 
           Qs[w].emplace_back(u, u, v), Qs[u].emplace_back(w, u, v);
         else if(ds1.same(rv, w)) 
           Qs[w].emplace_back(v, v, u), Qs[v].emplace_back(w, v, u);
+        else {
+          Qs[w].emplace_back(u, u, v), Qs[u].emplace_back(w, u, v);
+          Qs[w].emplace_back(v, v, u), Qs[v].emplace_back(w, v, u);
+        }
       }
       MBT[edge_id] = {ru, rv};
       Tedge[edge_id] = {u, v};
