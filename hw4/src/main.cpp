@@ -22,8 +22,7 @@ inline void plot_rect_line(FILE *f, int x0, int y0, int x1, int y1) {
 inline LL dist(const int& x0, const int& y0, const int& x1, const int& y1) {
   return abs(x0 - x1) + abs(y0 - y1);
 }
-template<typename U>
-inline LL plot(FILE* f, const U& numPins,
+template<typename U> inline LL plot(FILE* f, const U& numPins,
                const vector<int>& Xs, const vector<int>& Ys,
                const vector<vector<bool>>& T) {
   LL cost = 0;
@@ -298,7 +297,7 @@ int main(int argc, char** argv) {
         fprintf(fout, "V-line (%d,%d) (%d,%d)\n", Xs[i], Ys[i], Xs[i], Ys[j]);
         fprintf(fout, "H-line (%d,%d) (%d,%d)\n", Xs[i], Ys[j], Xs[j], Ys[j]);
       }
-  }
+    }
   cerr << "MST  cost " << orig_MST_cost << endl;
   cerr << "MRST cost " << MRST_cost << endl;
   cerr << "improvement "
