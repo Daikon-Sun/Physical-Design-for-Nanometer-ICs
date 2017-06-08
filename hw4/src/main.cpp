@@ -280,7 +280,7 @@ int main(int argc, char** argv) {
     FILE *fplt = (argc == 4 ? 
                   fopen((string(argv[3]) + to_string(i)).c_str(), "w") : 0);
     MRST_cost = plot(fplt, nPins, Xs, Ys, T);
-    cerr << MRST_cost << endl;
+    fprintf(stderr, "iter = %d, MRST_cost = %lld\n", i, MRST_cost);
   }
   fprintf(fout, "NumRoutedPins = %d\n", nPins);
   fprintf(fout, "Wirelength = %lld\n", MRST_cost);
@@ -297,9 +297,7 @@ int main(int argc, char** argv) {
         fprintf(fout, "H-line (%d,%d) (%d,%d)\n", Xs[i], Ys[j], Xs[j], Ys[j]);
       }
     }
-  cerr << "MST  cost " << orig_MST_cost << endl;
-  cerr << "MRST cost " << MRST_cost << endl;
-  cerr << "improvement "
-       << double(orig_MST_cost - MRST_cost) / orig_MST_cost << endl;
-  cerr << "nPins " << Xs.size() << endl;
+  fprintf(stderr, "MST_cost = %lld\n", orig_MST_cost);
+  fprintf(stderr, "improvement = %.6f\n", 
+          double(orig_MST_cost - MRST_cost) / orig_MST_cost);
 }
