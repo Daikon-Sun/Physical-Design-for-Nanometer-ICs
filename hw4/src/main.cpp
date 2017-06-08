@@ -1,8 +1,5 @@
 #include <algorithm>
-#include <cassert>
-#include <climits>
 #include <cstdio>
-#include <iostream>
 #include <numeric>
 #include <set>
 #include <tuple>
