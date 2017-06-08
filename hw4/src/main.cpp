@@ -4,6 +4,7 @@
 #include <set>
 #include <tuple>
 #include <vector>
+#include <iostream>
 
 using namespace std;
 typedef long long LL;
@@ -24,7 +25,7 @@ inline double dist2(const int& x0, const int& y0, const int& x1, const int& y1) 
 }
 template<typename U> inline LL plot(FILE* f, const U& nPins,
                const vector<int>& Xs, const vector<int>& Ys,
-               const vector<vector<bool>>& T) {
+               const vector<vector<bool>>& T, const vector<pair<int, int>>& ne) {
   LL cost = 0;
   if(f) fprintf(f, "set size ratio -1\nset nokey\n");
   if(f) fprintf(f, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
@@ -34,6 +35,11 @@ template<typename U> inline LL plot(FILE* f, const U& nPins,
       if(f) plot_rect_line(f, Xs[i], Ys[i], Xs[j], Ys[j]);
       cost += dist(Xs[i], Ys[i], Xs[j], Ys[j]);
     }
+  for(const auto& e : ne) {
+    if(f) 
+      plot_rect_line(f, Xs[e.first], Ys[e.first], Xs[e.second], Ys[e.second]);
+    cost += dist(Xs[e.first], Ys[e.first], Xs[e.second], Ys[e.second]);
+  }
   if(f) {
     fprintf(f, "set style line 1 lc rgb 'blue' pt 5\n");
     fprintf(f, "set style line 2 lc rgb 'red' pt 7\n");
@@ -147,7 +153,8 @@ inline pair<int, int> gen_point(int x0, int y0, int x1, int y1, int x2, int y2) 
 }
 template<typename U>
 inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
-                          vector<int>& X_mns_Y, vector<vector<bool>>& T) {
+                          vector<int>& X_mns_Y, vector<vector<bool>>& T,
+                          vector<pair<int, int>>& new_edge, bool add_new_edge) {
   U nPins = (U)Xs.size();
   //construct spanning graph
   vector<tuple<int, U, U>> edges;
@@ -175,7 +182,7 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   reverse(edges.begin(), edges.end());
   U edge_id = 0;
   T.clear();
-  T.resize(1.4*nPins, vector<bool>(1.4*nPins, false));
+  T.resize(nPins, vector<bool>(nPins, false));
   vector<vector<tuple<U, U>>> Qs(nPins);
   vector<pair<U, U>> MBT(nPins - 1), Tedge(nPins - 1);
   LL MST_cost = 0;
@@ -238,8 +245,11 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
     X_pls_Y.push_back(nx + ny);
     X_mns_Y.push_back(nx - ny);
     T[u0][v0] = T[v0][u0] = T[u1][v1] = T[v1][u1] = false;
-    T[Tcnt][w] = T[w][Tcnt] = T[Tcnt][u0] = T[u0][Tcnt] = true;
-    T[Tcnt][v0] = T[v0][Tcnt] = true;
+    if(add_new_edge) {
+      new_edge.emplace_back(Tcnt, w);
+      new_edge.emplace_back(Tcnt, u0);
+      new_edge.emplace_back(Tcnt, v0);
+    }
     ++Tcnt;
   }
   return MST_cost;
@@ -264,18 +274,21 @@ int main(int argc, char** argv) {
   bool use_short = (6 * nPins >= 255), use_int = (6 * nPins >= 65535);
   vector<vector<bool>> T;
   LL orig_MST_cost, MRST_cost;
+  vector<pair<int, int>> new_edge;
+  new_edge.reserve(nPins);
   for(int i = 0; i < iter; ++i) {
     LL MST_cost;
+    bool add = (i+1 == iter);
     if(use_int)
-      MST_cost = steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, T);
+      MST_cost = steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, add);
     else if(use_short)
-      MST_cost = steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, T);
+      MST_cost = steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, add);
     else
-      MST_cost = steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y, T);
+      MST_cost = steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, add);
     if(!i) orig_MST_cost = MST_cost;
     FILE *fplt = (argc == 4 ? 
                   fopen((string(argv[3]) + to_string(i)).c_str(), "w") : 0);
-    if(i == iter-1) MRST_cost = plot(fplt, nPins, Xs, Ys, T);
+    if(i == iter-1) MRST_cost = plot(fplt, nPins, Xs, Ys, T, new_edge);
   }
   fprintf(fout, "NumRoutedPins = %d\n", nPins);
   fprintf(fout, "Wirelength = %lld\n", MRST_cost);
