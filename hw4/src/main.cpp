@@ -260,7 +260,8 @@ int main(int argc, char** argv) {
   fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
   fscanf(fin, "NumPins = %d\n", &nPins);
   if(nPins >= 500) ++iter;
-  if(nPins >= 5000) ++iter;
+  if(nPins >= 2000) ++iter;
+  if(nPins >= 10000) ++iter;
   vector<int> Xs(nPins), Ys(nPins), X_pls_Y(nPins), X_mns_Y(nPins);
   Xs.reserve((iter*0.3 + 1)*nPins);
   Ys.reserve((iter*0.3 + 1)*nPins);
