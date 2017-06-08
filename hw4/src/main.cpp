@@ -250,13 +250,14 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   }
   return MST_cost;
 }
-constexpr int iter = 3;
 int main(int argc, char** argv) {
-  int MINX, MINY, MAXX, MAXY;
-  FILE *fin = fopen(argv[1] ,"r");
+  int MINX, MINY, MAXX, MAXY, iter = 2, nPins;
+  FILE *fin = fopen(argv[1] ,"r"), *fout = fopen(argv[2], "w");
   fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
-  int nPins;
   fscanf(fin, "NumPins = %d\n", &nPins);
+  if(nPins >= 500) ++iter;
+  if(nPins >= 2000) ++iter;
+  if(nPins >= 10000) ++iter;
   vector<int> Xs(nPins), Ys(nPins), X_pls_Y(nPins), X_mns_Y(nPins);
   Xs.reserve((iter*0.3 + 1)*nPins);
   Ys.reserve((iter*0.3 + 1)*nPins);
@@ -267,8 +268,7 @@ int main(int argc, char** argv) {
     X_pls_Y[i] = Xs[i] + Ys[i];
     X_mns_Y[i] = Xs[i] - Ys[i];
   }
-  bool use_short = (6 * nPins >= 255);
-  bool use_int = (6 * nPins >= 65535);
+  bool use_short = (6 * nPins >= 255), use_int = (6 * nPins >= 65535);
   vector<vector<bool>> T;
   LL orig_MST_cost, MRST_cost;
   for(int i = 0; i < iter; ++i) {
@@ -285,7 +285,6 @@ int main(int argc, char** argv) {
     MRST_cost = plot(fplt, nPins, Xs, Ys, T);
     cerr << MRST_cost << endl;
   }
-  FILE *fout = fopen(argv[2], "w");
   fprintf(fout, "NumRoutedPins = %d\n", nPins);
   fprintf(fout, "Wirelength = %lld\n", MRST_cost);
   #pragma omp parallel for
