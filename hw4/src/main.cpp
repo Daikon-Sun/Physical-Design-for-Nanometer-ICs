@@ -93,7 +93,6 @@ template<typename U> struct disjoint_set2 {
     par[a] = b;
   }
   bool same(U a, U b) { return root(a) == root(b); }
-  U size(U a) { return -par[a]; }
   vector<U> par;
 };
 template<typename U>
