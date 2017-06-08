@@ -160,17 +160,17 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   vector<U> ord_pls(nPins), ord_mns(nPins);
   iota(ord_pls.begin(), ord_pls.end(), 0);
   iota(ord_mns.begin(), ord_mns.end(), 0);
-  sort(ord_pls.begin(), ord_pls.end(), [&](U& p1, U& p2) {
+  sort(ord_pls.begin(), ord_pls.end(), [&](const U& p1, const U& p2) {
          return X_pls_Y[p1] < X_pls_Y[p2]; });
-  sort(ord_mns.begin(), ord_mns.end(), [&](U& p1, U& p2) {
+  sort(ord_mns.begin(), ord_mns.end(), [&](const U& p1, const U& p2) {
          return X_mns_Y[p1] < X_mns_Y[p2]; });
   auto grtr_x = [&](const U& p1, const U& p2) { return Xs[p1] > Xs[p2]; };
   auto grtr_y = [&](const U& p1, const U& p2) { return Ys[p1] > Ys[p2]; };
   auto less_y = [&](const U& p1, const U& p2) { return Ys[p1] < Ys[p2]; };
-  span(Xs, Ys, ord_pls, X_mns_Y, grtr_x, greater<int>(), edges, adj, false);
-  span(Xs, Ys, ord_pls, X_mns_Y, grtr_y, less_equal<int>(), edges, adj, true);
-  span(Xs, Ys, ord_mns, X_pls_Y, less_y, less<int>(), edges, adj, false);
-  span(Xs, Ys, ord_mns, X_pls_Y, grtr_x, greater_equal<int>(), edges, adj, true);
+  span(Xs, Ys, ord_pls, X_mns_Y, grtr_x, greater<int>(), edges, adj, 0);
+  span(Xs, Ys, ord_pls, X_mns_Y, grtr_y, less_equal<int>(), edges, adj, 1);
+  span(Xs, Ys, ord_mns, X_pls_Y, less_y, less<int>(), edges, adj, 0);
+  span(Xs, Ys, ord_mns, X_pls_Y, grtr_x, greater_equal<int>(), edges, adj, 1);
   //construct steiner-tree
   disjoint_set1<U> ds1(2*nPins - 1); 
   sort(edges.begin(), edges.end(), 
@@ -237,16 +237,14 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
     if(!T[u0][v0] || !T[u1][v1]) continue;
     int nx, ny;
     tie(nx, ny) = gen_point(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
-    if(nx != INT_MIN && ny != INT_MIN) {
-      Xs.push_back(nx);
-      Ys.push_back(ny);
-      X_pls_Y.push_back(nx + ny);
-      X_mns_Y.push_back(nx - ny);
-      T[u0][v0] = T[v0][u0] = T[u1][v1] = T[v1][u1] = false;
-      T[Tcnt][w] = T[w][Tcnt] = T[Tcnt][u0] = T[u0][Tcnt] = true;
-      T[Tcnt][v0] = T[v0][Tcnt] = true;
-      ++Tcnt;
-    }
+    Xs.push_back(nx);
+    Ys.push_back(ny);
+    X_pls_Y.push_back(nx + ny);
+    X_mns_Y.push_back(nx - ny);
+    T[u0][v0] = T[v0][u0] = T[u1][v1] = T[v1][u1] = false;
+    T[Tcnt][w] = T[w][Tcnt] = T[Tcnt][u0] = T[u0][Tcnt] = true;
+    T[Tcnt][v0] = T[v0][Tcnt] = true;
+    ++Tcnt;
   }
   return MST_cost;
 }
@@ -256,8 +254,7 @@ int main(int argc, char** argv) {
   fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
   fscanf(fin, "NumPins = %d\n", &nPins);
   if(nPins >= 500) ++iter;
-  if(nPins >= 2000) ++iter;
-  if(nPins >= 10000) ++iter;
+  if(nPins >= 5000) ++iter;
   vector<int> Xs(nPins), Ys(nPins), X_pls_Y(nPins), X_mns_Y(nPins);
   Xs.reserve((iter*0.3 + 1)*nPins);
   Ys.reserve((iter*0.3 + 1)*nPins);
