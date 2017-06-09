@@ -4,7 +4,6 @@
 #include <set>
 #include <tuple>
 #include <vector>
-#include <iostream>
 
 using namespace std;
 typedef long long LL;
@@ -39,13 +38,13 @@ plot(FILE *fplt, FILE *fout, const U& nPins, const LL& MRST_cost,
   fprintf(fout, "Wirelength = %lld\n", MRST_cost);
   if(fplt) fprintf(fplt, "set size ratio -1\nset nokey\n");
   if(fplt) fprintf(fplt, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for(uint i = 0; i < Tedge.size(); ++i) if(Tedge[i].first != -1) {
     const int &u = Tedge[i].first, &v = Tedge[i].second;
     if(fplt) plot_rect(fplt, Xs[u], Ys[u], Xs[v], Ys[v]);
     out_rect_line(fout, Xs[u], Ys[u], Xs[v], Ys[v]);
   }
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for(uint i = 0; i < new_edge.size(); ++i) {
     const pair<U, U>& e = new_edge[i];
     if(fplt)
@@ -190,8 +189,7 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   disjoint_set1<U> ds1(2*nPins - 1); 
   sort(edges.begin(), edges.end(), 
        [&](const tuple<int, U, U>& t0, const tuple<int, U, U>& t1) {
-       return get<0>(t0) > get<0>(t1); });
-  reverse(edges.begin(), edges.end());
+       return get<0>(t0) < get<0>(t1); });
   U edge_id = 0;
   Tedge.resize(nPins - 1);
   vector<vector<tuple<U, U>>> Qs(nPins);
@@ -234,12 +232,13 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   vector<bool> colors(2*nPins - 1);
   vector<U> ancs(2*nPins - 1, -1);
   tarjan(U(edge_id + nPins - 1), nPins, ds2, Qs, MBT, Tedge, ancs, colors, ans);
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for(uint i = 0; i < ans.size(); ++i)
     get<3>(ans[i]) = calc_gain(Xs, Ys, nPins, Tedge, ans[i]);
   sort(ans.begin(), ans.end(),
        [&](const tuple<U, U, U, int>& t1, const tuple<U, U, U, int>& t2) {
-         return get<3>(t1) > get<3>(t2); });
+         return get<3>(t1) < get<3>(t2); });
+  reverse(ans.begin(), ans.end());
   U Tcnt = nPins;
   LL MRST_cost = MST_cost;
   for(auto &an : ans) {
@@ -256,12 +255,12 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
     Ys.push_back(ny);
     X_pls_Y.push_back(nx + ny);
     X_mns_Y.push_back(nx - ny);
-    Tedge[get<1>(an)].first = Tedge[get<2>(an)].first = -1;
     if(add_new_edge) {
       new_edge.emplace_back(Tcnt, w);
       new_edge.emplace_back(Tcnt, u0);
       new_edge.emplace_back(Tcnt, v0);
     }
+    Tedge[get<1>(an)].first = Tedge[get<2>(an)].first = -1;
     ++Tcnt;
   }
   return {MST_cost, MRST_cost};
@@ -293,8 +292,8 @@ int main(int argc, char** argv) {
     FILE *fplt = (argc == 4 ? 
                   fopen((string(argv[3]) + to_string(i)).c_str(), "w") : 0);
     LL MST_cost;
-    bool use_short = (3 * Xs.size() >= 255);
-    bool use_int = (3 * Xs.size() >= 65535);
+    bool use_short = (4 * Xs.size() >= 255);
+    bool use_int = (4 * Xs.size() >= 65535);
     bool addedge = (i+1 == iter);
     if(use_int) {
       vector<pair<int, int>> new_edge, Tedge;
