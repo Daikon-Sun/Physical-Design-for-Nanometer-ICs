@@ -16,35 +16,49 @@ inline void plot_rect(FILE *f, int x0, int y0, int x1, int y1) {
     fprintf(f, "set arrow from %d,%d to %d,%d nohead\n", x0, y1, x1, y1); 
   }
 }
+inline void out_rect_line(FILE *f, int x0, int y0, int x1, int y1) {
+  if(x0 == x1 && y0 == y1) return;
+  else if(x0 == x1)
+    fprintf(f, "V-line (%d,%d) (%d,%d)\n", x0, y0, x1, y1);
+  else if(y0 == y1)
+    fprintf(f, "H-line (%d,%d) (%d,%d)\n", x0, y0, x1, y1);
+  else {
+    fprintf(f, "V-line (%d,%d) (%d,%d)\n", x0, y0, x0, y1);
+    fprintf(f, "H-line (%d,%d) (%d,%d)\n", x0, y1, x1, y1);
+  }
+}
 inline LL dist(const int& x0, const int& y0, const int& x1, const int& y1) {
   return abs(x0 - x1) + abs(y0 - y1);
 }
-template<typename U> inline LL plot(FILE* f, const U& nPins,
-               const vector<int>& Xs, const vector<int>& Ys,
-               const vector<vector<bool>>& T, const vector<pair<U, U>>& ne) {
-  LL cost = 0;
-  if(f) fprintf(f, "set size ratio -1\nset nokey\n");
-  if(f) fprintf(f, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
-  #pragma omp parallel for reduction(+:cost)
+template<typename U> inline void
+plot(FILE *fplt, FILE *fout, const U& nPins, const LL& MRST_cost, 
+     const vector<int>& Xs, const vector<int>& Ys, const vector<vector<bool>>& T,
+     const vector<pair<U, U>>& ne) {
+  fprintf(fout, "NumRoutedPins = %d\n", nPins);
+  fprintf(fout, "Wirelength = %lld\n", MRST_cost);
+  if(fplt) fprintf(fplt, "set size ratio -1\nset nokey\n");
+  if(fplt) fprintf(fplt, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
+  #pragma omp parallel for
   for(uint i = 0; i < T.size(); ++i) for(uint j = i+1; j < T.size(); ++j)
     if(T[i][j]) {
-      if(f) plot_rect(f, Xs[i], Ys[i], Xs[j], Ys[j]);
-      cost += dist(Xs[i], Ys[i], Xs[j], Ys[j]);
+      if(fplt) plot_rect(fplt, Xs[i], Ys[i], Xs[j], Ys[j]);
+      out_rect_line(fout, Xs[i], Ys[i], Xs[j], Ys[j]);
     }
   for(const auto& e : ne) {
-    if(f) plot_rect(f, Xs[e.first], Ys[e.first], Xs[e.second], Ys[e.second]);
-    cost += dist(Xs[e.first], Ys[e.first], Xs[e.second], Ys[e.second]);
+    if(fplt)
+      plot_rect(fplt, Xs[e.first], Ys[e.first], Xs[e.second], Ys[e.second]);
+    out_rect_line(fout, Xs[e.first], Ys[e.first], Xs[e.second], Ys[e.second]);
   }
-  if(f) {
-    fprintf(f, "set style line 1 lc rgb 'blue' pt 5\n");
-    fprintf(f, "set style line 2 lc rgb 'red' pt 7\n");
-    fprintf(f, "plot '-' w p ls 1, '-' w p ls 2\n");
-    for(int i = 0; i < nPins; ++i) fprintf(f, "%d %d\n", Xs[i], Ys[i]);
-    fprintf(f, "e\n");
-    for(uint i = nPins; i < Xs.size(); ++i) fprintf(f, "%d %d\n", Xs[i], Ys[i]);
-    fprintf(f, "e\npause -1\n");
+  if(fplt) {
+    fprintf(fplt, "set style line 1 lc rgb 'blue' pt 5\n");
+    fprintf(fplt, "set style line 2 lc rgb 'red' pt 7\n");
+    fprintf(fplt, "plot '-' w p ls 1, '-' w p ls 2\n");
+    for(int i = 0; i < nPins; ++i) fprintf(fplt, "%d %d\n", Xs[i], Ys[i]);
+    fprintf(fplt, "e\n");
+    for(uint i = nPins; i < Xs.size(); ++i)
+      fprintf(fplt, "%d %d\n", Xs[i], Ys[i]);
+    fprintf(fplt, "e\npause -1\n");
   }
-  return cost;
 }
 template<typename Set_Comp, typename Val_Comp, typename U>
 inline void span(const vector<int>& Xs, const vector<int>& Ys,
@@ -146,10 +160,10 @@ inline pair<int, int> gen_point(int x0, int y0, int x1, int y1, int x2, int y2) 
   else if(y0 > mxy) rtny = mxy;
   return {rtnx, rtny};
 }
-template<typename U>
-inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
-                          vector<int>& X_mns_Y, vector<vector<bool>>& T,
-                          vector<pair<U, U>>& new_edge, bool add_new_edge) {
+template<typename U> inline pair<LL, LL> 
+steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
+             vector<int>& X_mns_Y, vector<vector<bool>>& T,
+             vector<pair<U, U>>& new_edge, bool add_new_edge) {
   U nPins = (U)Xs.size();
   //construct spanning graph
   vector<tuple<int, U, U>> edges;
@@ -226,6 +240,7 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
        [&](const tuple<U, U, U, int>& t1, const tuple<U, U, U, int>& t2) {
          return get<3>(t1) > get<3>(t2); });
   U Tcnt = nPins;
+  LL MRST_cost = MST_cost;
   for(auto &an : ans) {
     if(get<3>(an) <= 0) break;
     const U &w = get<0>(an);
@@ -233,6 +248,7 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
     const U &u1 = Tedge[get<2>(an) - nPins].first;
     const U &v1 = Tedge[get<2>(an) - nPins].second;
     if(!T[u0][v0] || !T[u1][v1]) continue;
+    MRST_cost -= get<3>(an);
     int nx, ny;
     tie(nx, ny) = gen_point(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
     Xs.push_back(nx);
@@ -247,7 +263,7 @@ inline LL steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
     }
     ++Tcnt;
   }
-  return MST_cost;
+  return {MST_cost, MRST_cost};
 }
 int main(int argc, char** argv) {
   int MINX, MINY, MAXX, MAXY, iter = 2, nPins;
@@ -267,47 +283,39 @@ int main(int argc, char** argv) {
     X_pls_Y[i] = Xs[i] + Ys[i];
     X_mns_Y[i] = Xs[i] - Ys[i];
   }
-  bool use_short = (6 * nPins >= 255), use_int = (6 * nPins >= 65535);
   vector<vector<bool>> T;
   LL orig_MST_cost, MRST_cost;
   for(int i = 0; i < iter; ++i) {
     FILE *fplt = (argc == 4 ? 
                   fopen((string(argv[3]) + to_string(i)).c_str(), "w") : 0);
     LL MST_cost;
-    bool add = (i+1 == iter);
+    bool use_short = (3 * Xs.size() >= 255);
+    bool use_int = (3 * Xs.size() >= 65535);
+    bool addedge = (i+1 == iter);
     if(use_int) {
       vector<pair<int, int>> new_edge;
       new_edge.reserve(nPins);
-      MST_cost = steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, add);
-      if(i == iter-1) MRST_cost = plot(fplt, (int)nPins, Xs, Ys, T, new_edge);
+      tie(MST_cost, MRST_cost) =
+        steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, addedge);
+      if(addedge) plot(fplt, fout, (int)nPins, MRST_cost, Xs, Ys, T, new_edge);
     } else if(use_short) {
       vector<pair<short, short>> new_edge;
       new_edge.reserve(nPins);
-      MST_cost = steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, add);
-      if(i == iter-1) MRST_cost = plot(fplt, (short)nPins, Xs, Ys, T, new_edge);
+      tie(MST_cost, MRST_cost) =
+        steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, addedge);
+      if(addedge) plot(fplt, fout, (short)nPins, MRST_cost, Xs, Ys, T, new_edge);
     } else {
       vector<pair<char, char>> new_edge;
       new_edge.reserve(nPins);
-      MST_cost = steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, add);
-      if(i == iter-1) MRST_cost = plot(fplt, (char)nPins, Xs, Ys, T, new_edge);
+      tie(MST_cost, MRST_cost) =
+        steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, addedge);
+      if(addedge) plot(fplt, fout, (char)nPins, MRST_cost, Xs, Ys, T, new_edge);
     }
+    //fprintf(stderr, "tmp_MRST_cost = %lld\n", MRST_cost);
     if(!i) orig_MST_cost = MST_cost;
+    if(fplt) fclose(fplt);
   }
-  fprintf(fout, "NumRoutedPins = %d\n", nPins);
-  fprintf(fout, "Wirelength = %lld\n", MRST_cost);
-  #pragma omp parallel for
-  for(uint i = 0; i < T.size(); ++i)
-    for(uint j = i + 1; j < T.size(); ++j) if(T[i][j]) {
-      if(Xs[i] == Xs[j] && Ys[i] == Ys[j]) continue;
-      else if(Xs[i] == Xs[j]) 
-        fprintf(fout, "V-line (%d,%d) (%d,%d)\n", Xs[i], Ys[i], Xs[j], Ys[j]);
-      else if(Ys[i] == Ys[j])
-        fprintf(fout, "H-line (%d,%d) (%d,%d)\n", Xs[i], Ys[i], Xs[j], Ys[j]);
-      else {
-        fprintf(fout, "V-line (%d,%d) (%d,%d)\n", Xs[i], Ys[i], Xs[i], Ys[j]);
-        fprintf(fout, "H-line (%d,%d) (%d,%d)\n", Xs[i], Ys[j], Xs[j], Ys[j]);
-      }
-    }
+  fclose(fout);
   fprintf(stderr, "MST_cost = %lld\n", orig_MST_cost);
   fprintf(stderr, "MRST_cost = %lld\n", MRST_cost);
   fprintf(stderr, "improvement = %.6f\n", 
