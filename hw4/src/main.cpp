@@ -4,6 +4,7 @@
 #include <set>
 #include <tuple>
 #include <vector>
+#include <iostream>
 
 using namespace std;
 typedef long long LL;
@@ -32,19 +33,22 @@ inline LL dist(const int& x0, const int& y0, const int& x1, const int& y1) {
 }
 template<typename U> inline void
 plot(FILE *fplt, FILE *fout, const U& nPins, const LL& MRST_cost, 
-     const vector<int>& Xs, const vector<int>& Ys, const vector<vector<bool>>& T,
-     const vector<pair<U, U>>& ne) {
+     const vector<int>& Xs, const vector<int>& Ys, 
+     const vector<pair<U, U>>& Tedge, const vector<bool>& T,
+     const vector<pair<U, U>>& new_edge) {
   fprintf(fout, "NumRoutedPins = %d\n", nPins);
   fprintf(fout, "Wirelength = %lld\n", MRST_cost);
   if(fplt) fprintf(fplt, "set size ratio -1\nset nokey\n");
   if(fplt) fprintf(fplt, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
   #pragma omp parallel for
-  for(uint i = 0; i < T.size(); ++i) for(uint j = i+1; j < T.size(); ++j)
-    if(T[i][j]) {
-      if(fplt) plot_rect(fplt, Xs[i], Ys[i], Xs[j], Ys[j]);
-      out_rect_line(fout, Xs[i], Ys[i], Xs[j], Ys[j]);
-    }
-  for(const auto& e : ne) {
+  for(uint i = 0; i < Tedge.size(); ++i) if(T[i]) {
+    const int &u = Tedge[i].first, &v = Tedge[i].second;
+    if(fplt) plot_rect(fplt, Xs[u], Ys[u], Xs[v], Ys[v]);
+    out_rect_line(fout, Xs[u], Ys[u], Xs[v], Ys[v]);
+  }
+  #pragma omp parallel for
+  for(uint i = 0; i < new_edge.size(); ++i) {
+    const pair<U, U>& e = new_edge[i];
     if(fplt)
       plot_rect(fplt, Xs[e.first], Ys[e.first], Xs[e.second], Ys[e.second]);
     out_rect_line(fout, Xs[e.first], Ys[e.first], Xs[e.second], Ys[e.second]);
@@ -127,9 +131,9 @@ inline void tarjan(const U& u, const U& nPins, disjoint_set2<U>& ds2,
   colors[u] = true;
   if(u < nPins) for(auto &Q : Qs[u]) if(colors[get<0>(Q)])
     if(u == Tedge[get<1>(Q)].first || u == Tedge[get<1>(Q)].second)
-      ans.emplace_back(get<0>(Q), get<1>(Q), ancs[ds2.root(get<0>(Q))], 0);
+      ans.emplace_back(get<0>(Q), get<1>(Q), ancs[ds2.root(get<0>(Q))]-nPins, 0);
     else
-      ans.emplace_back(u, get<1>(Q), ancs[ds2.root(get<0>(Q))], 0);
+      ans.emplace_back(u, get<1>(Q), ancs[ds2.root(get<0>(Q))]-nPins, 0);
 }
 inline int calc_cost(int x0, int y0, int x1, int y1, int x2, int y2) {
   int rtn = 0, mxx = max(x1, x2), mnx = min(x1, x2);
@@ -145,8 +149,8 @@ inline int calc_gain(const vector<int>& Xs, const vector<int>& Ys,
                      const U& nPins, const vector<pair<U, U>>& Tedge,
                      const tuple<U, U, U, int>& t) {
   const U &w = get<0>(t), &u0 = Tedge[get<1>(t)].first;
-  const U &v0 = Tedge[get<1>(t)].second, &x = get<2>(t);
-  const U &u1 = Tedge[x - nPins].first, &v1 = Tedge[x - nPins].second;
+  const U &v0 = Tedge[get<1>(t)].second;
+  const U &u1 = Tedge[get<2>(t)].first, &v1 = Tedge[get<2>(t)].second;
   return dist(Xs[u1], Ys[u1], Xs[v1], Ys[v1]) -
          calc_cost(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
 }
@@ -162,7 +166,7 @@ inline pair<int, int> gen_point(int x0, int y0, int x1, int y1, int x2, int y2) 
 }
 template<typename U> inline pair<LL, LL> 
 steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
-             vector<int>& X_mns_Y, vector<vector<bool>>& T,
+             vector<int>& X_mns_Y, vector<pair<U, U>>& Tedge, vector<bool>& T,
              vector<pair<U, U>>& new_edge, bool add_new_edge) {
   U nPins = (U)Xs.size();
   //construct spanning graph
@@ -190,17 +194,15 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
        return get<0>(t0) > get<0>(t1); });
   reverse(edges.begin(), edges.end());
   U edge_id = 0;
-  T.clear();
-  T.resize(nPins, vector<bool>(nPins, false));
+  Tedge.resize(nPins - 1);
   vector<vector<tuple<U, U>>> Qs(nPins);
-  vector<pair<U, U>> MBT(nPins - 1), Tedge(nPins - 1);
+  vector<pair<U, U>> MBT(nPins - 1);
   LL MST_cost = 0;
   for(auto& edge : edges) {
     U &u = get<1>(edge), &v = get<2>(edge);
     U ru = ds1.root(u), rv = ds1.root(v);
     if(ru != rv) {
       MST_cost += dist(Xs[u], Ys[u], Xs[v], Ys[v]);
-      T[u][v] = T[v][u] = true;
       for(auto& w : adj[u]) if(w != v) {
         if(ds1.same(ru, w)) 
           Qs[w].emplace_back(u, edge_id), Qs[u].emplace_back(w, edge_id);
@@ -241,13 +243,15 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
          return get<3>(t1) > get<3>(t2); });
   U Tcnt = nPins;
   LL MRST_cost = MST_cost;
+  T.clear();
+  T.resize(nPins - 1, true);
   for(auto &an : ans) {
     if(get<3>(an) <= 0) break;
+    if(!T[get<1>(an)] || !T[get<2>(an)]) continue;
     const U &w = get<0>(an);
     const U &u0 = Tedge[get<1>(an)].first, &v0 = Tedge[get<1>(an)].second;
-    const U &u1 = Tedge[get<2>(an) - nPins].first;
-    const U &v1 = Tedge[get<2>(an) - nPins].second;
-    if(!T[u0][v0] || !T[u1][v1]) continue;
+    const U &u1 = Tedge[get<2>(an)].first;
+    const U &v1 = Tedge[get<2>(an)].second;
     MRST_cost -= get<3>(an);
     int nx, ny;
     tie(nx, ny) = gen_point(Xs[w], Ys[w], Xs[u0], Ys[u0], Xs[v0], Ys[v0]);
@@ -255,7 +259,7 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
     Ys.push_back(ny);
     X_pls_Y.push_back(nx + ny);
     X_mns_Y.push_back(nx - ny);
-    T[u0][v0] = T[v0][u0] = T[u1][v1] = T[v1][u1] = false;
+    T[get<1>(an)] = T[get<2>(an)] = false;
     if(add_new_edge) {
       new_edge.emplace_back(Tcnt, w);
       new_edge.emplace_back(Tcnt, u0);
@@ -273,6 +277,8 @@ int main(int argc, char** argv) {
   if(nPins >= 500) ++iter;
   if(nPins >= 2000) ++iter;
   if(nPins >= 10000) ++iter;
+  if(nPins >= 50000) ++iter;
+  if(nPins >= 200000) ++iter;
   vector<int> Xs(nPins), Ys(nPins), X_pls_Y(nPins), X_mns_Y(nPins);
   Xs.reserve((iter*0.3 + 1)*nPins);
   Ys.reserve((iter*0.3 + 1)*nPins);
@@ -283,7 +289,7 @@ int main(int argc, char** argv) {
     X_pls_Y[i] = Xs[i] + Ys[i];
     X_mns_Y[i] = Xs[i] - Ys[i];
   }
-  vector<vector<bool>> T;
+  vector<bool> T;
   LL orig_MST_cost, MRST_cost;
   for(int i = 0; i < iter; ++i) {
     FILE *fplt = (argc == 4 ? 
@@ -293,23 +299,29 @@ int main(int argc, char** argv) {
     bool use_int = (3 * Xs.size() >= 65535);
     bool addedge = (i+1 == iter);
     if(use_int) {
-      vector<pair<int, int>> new_edge;
+      vector<pair<int, int>> new_edge, Tedge;
       new_edge.reserve(nPins);
-      tie(MST_cost, MRST_cost) =
-        steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, addedge);
-      if(addedge) plot(fplt, fout, (int)nPins, MRST_cost, Xs, Ys, T, new_edge);
+      tie(MST_cost, MRST_cost) = 
+        steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, 
+                          Tedge, T, new_edge, addedge);
+      if(addedge) 
+        plot(fplt, fout, (int)nPins, MRST_cost, Xs, Ys, Tedge, T, new_edge);
     } else if(use_short) {
-      vector<pair<short, short>> new_edge;
+      vector<pair<short, short>> new_edge, Tedge;
       new_edge.reserve(nPins);
       tie(MST_cost, MRST_cost) =
-        steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, addedge);
-      if(addedge) plot(fplt, fout, (short)nPins, MRST_cost, Xs, Ys, T, new_edge);
+        steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, 
+                            Tedge, T, new_edge, addedge);
+      if(addedge) 
+        plot(fplt, fout, (short)nPins, MRST_cost, Xs, Ys, Tedge, T, new_edge);
     } else {
-      vector<pair<char, char>> new_edge;
+      vector<pair<char, char>> new_edge, Tedge;
       new_edge.reserve(nPins);
       tie(MST_cost, MRST_cost) =
-        steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y, T, new_edge, addedge);
-      if(addedge) plot(fplt, fout, (char)nPins, MRST_cost, Xs, Ys, T, new_edge);
+        steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y,
+                           Tedge, T, new_edge, addedge);
+      if(addedge) 
+        plot(fplt, fout, (char)nPins, MRST_cost, Xs, Ys, Tedge, T, new_edge);
     }
     //fprintf(stderr, "tmp_MRST_cost = %lld\n", MRST_cost);
     if(!i) orig_MST_cost = MST_cost;
