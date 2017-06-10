@@ -38,13 +38,13 @@ plot(FILE *fplt, FILE *fout, const U& nPins, const LL& MRST_cost,
   fprintf(fout, "Wirelength = %lld\n", MRST_cost);
   if(fplt) fprintf(fplt, "set size ratio -1\nset nokey\n");
   if(fplt) fprintf(fplt, "set style line 1 lc rgb '#0060ad' lt 1 lw 2 pt 7\n");
-  //#pragma omp parallel for
+  #pragma omp parallel for
   for(uint i = 0; i < Tedge.size(); ++i) if(Tedge[i].first != -1) {
     const int &u = Tedge[i].first, &v = Tedge[i].second;
     if(fplt) plot_rect(fplt, Xs[u], Ys[u], Xs[v], Ys[v]);
     out_rect_line(fout, Xs[u], Ys[u], Xs[v], Ys[v]);
   }
-  //#pragma omp parallel for
+  #pragma omp parallel for
   for(uint i = 0; i < new_edge.size(); ++i) {
     const pair<U, U>& e = new_edge[i];
     if(fplt)
@@ -232,7 +232,7 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   vector<bool> colors(2*nPins - 1);
   vector<U> ancs(2*nPins - 1, -1);
   tarjan(U(edge_id + nPins - 1), nPins, ds2, Qs, MBT, Tedge, ancs, colors, ans);
-  //#pragma omp parallel for
+  #pragma omp parallel for
   for(uint i = 0; i < ans.size(); ++i)
     get<3>(ans[i]) = calc_gain(Xs, Ys, nPins, Tedge, ans[i]);
   sort(ans.begin(), ans.end(),
