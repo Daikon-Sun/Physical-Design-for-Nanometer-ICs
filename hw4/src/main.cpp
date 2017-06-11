@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
   fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
   fscanf(fin, "NumPins = %d\n", &nPins);
   if(nPins >= 500) ++iter;
-  if(nPins >= 2000) ++iter;
+  if(nPins >= 2500) ++iter;
   if(nPins >= 10000) ++iter;
   if(nPins >= 50000) ++iter;
   if(nPins >= 200000) ++iter;
