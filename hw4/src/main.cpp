@@ -315,13 +315,13 @@ int main(int argc, char** argv) {
       if(addedge) 
         plot(fplt, fout, (char)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
     }
-    fprintf(stderr, "iter = %d MRST_cost = %lld\n", i, MRST_cost);
+    //fprintf(stderr, "iter = %d MRST_cost = %lld\n", i, MRST_cost);
     if(!i) orig_MST_cost = MST_cost;
     if(fplt) fclose(fplt);
   }
   fclose(fout);
-  fprintf(stderr, "MST_cost = %lld\n", orig_MST_cost);
-  fprintf(stderr, "MRST_cost = %lld\n", MRST_cost);
-  fprintf(stderr, "improvement = %.6f\n", 
-          double(orig_MST_cost - MRST_cost) / orig_MST_cost);
+  //fprintf(stderr, "MST_cost = %lld\n", orig_MST_cost);
+  //fprintf(stderr, "MRST_cost = %lld\n", MRST_cost);
+  //fprintf(stderr, "improvement = %.6f\n", 
+  //        double(orig_MST_cost - MRST_cost) / orig_MST_cost);
 }
