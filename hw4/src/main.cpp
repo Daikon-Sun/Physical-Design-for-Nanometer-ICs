@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <climits>
 #include <cstdio>
 #include <numeric>
 #include <set>
@@ -235,12 +236,25 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
     get<3>(ans[i]) = calc_gain(Xs, Ys, nPins, Tedge, ans[i]);
   sort(ans.begin(), ans.end(),
        [&](const tuple<U, U, U, int>& t1, const tuple<U, U, U, int>& t2) {
-         return get<3>(t1) < get<3>(t2); });
-  reverse(ans.begin(), ans.end());
+         return get<3>(t1) > get<3>(t2); });
+  vector<int> cnt(nPins - 1);
+  for(uint i = 0; i < ans.size(); ++i) {
+    if(get<3>(ans[i]) <= 0) {
+      ans.resize(i);
+      break;
+    }
+    cnt[get<1>(ans[i])] += get<3>(ans[i]); 
+    cnt[get<2>(ans[i])] += get<3>(ans[i]); 
+  }
+  sort(ans.begin(), ans.end(),
+       [&](const tuple<U, U, U, int>& t1, const tuple<U, U, U, int>& t2) {
+         if(get<3>(t1) == get<3>(t2))
+          return cnt[get<1>(t1)]+cnt[get<2>(t1)] <
+                 cnt[get<1>(t2)]+cnt[get<2>(t2)];
+         else return get<3>(t1) > get<3>(t2); });
   U Tcnt = nPins;
   LL MRST_cost = MST_cost;
   for(auto &an : ans) {
-    if(get<3>(an) <= 0) break;
     if(Tedge[get<1>(an)].first == -1 || Tedge[get<2>(an)].first == -1) continue;
     const U &w = get<0>(an);
     const U &u0 = Tedge[get<1>(an)].first, &v0 = Tedge[get<1>(an)].second;
@@ -264,7 +278,7 @@ steiner_tree(vector<int>& Xs, vector<int>& Ys, vector<int>& X_pls_Y,
   return {MST_cost, MRST_cost};
 }
 int main(int argc, char** argv) {
-  int MINX, MINY, MAXX, MAXY, iter = 2, nPins;
+  int MINX, MINY, MAXX, MAXY, iter = 3, nPins;
   FILE *fin = fopen(argv[1] ,"r"), *fout = fopen(argv[2], "w");
   fscanf(fin, "Boundary = (%d,%d), (%d,%d)\n", &MINX, &MINY, &MAXX, &MAXY);
   fscanf(fin, "NumPins = %d\n", &nPins);
@@ -285,11 +299,11 @@ int main(int argc, char** argv) {
     X_pls_Y[i] = Xs[i] + Ys[i];
     X_mns_Y[i] = Xs[i] - Ys[i];
   }
-  LL orig_MST_cost, MRST_cost;
+  LL orig_MST_cost = LLONG_MAX, last_MRST_cost = LLONG_MAX;
   for(int i = 0; i < iter; ++i) {
     FILE *fplt = (argc == 4 ? 
                   fopen((string(argv[3]) + to_string(i)).c_str(), "w") : 0);
-    LL MST_cost;
+    LL MST_cost, MRST_cost;
     bool use_short = (4 * Xs.size() >= 255);
     bool use_int = (4 * Xs.size() >= 65535);
     bool addedge = (i+1 == iter);
@@ -298,22 +312,28 @@ int main(int argc, char** argv) {
       new_edge.reserve(nPins);
       tie(MST_cost, MRST_cost) = 
         steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, Tedge, new_edge, addedge);
-      if(addedge) 
+      if(addedge || MRST_cost >= last_MRST_cost) {
         plot(fplt, fout, (int)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
+        break;
+      } else last_MRST_cost = MRST_cost;
     } else if(use_short) {
       vector<pair<short, short>> new_edge, Tedge;
       new_edge.reserve(nPins);
       tie(MST_cost, MRST_cost) =
         steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, Tedge, new_edge, addedge);
-      if(addedge) 
+      if(addedge || MRST_cost >= last_MRST_cost) {
         plot(fplt, fout, (short)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
+        break;
+      } else last_MRST_cost = MRST_cost;
     } else {
       vector<pair<char, char>> new_edge, Tedge;
       new_edge.reserve(nPins);
       tie(MST_cost, MRST_cost) =
         steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y, Tedge, new_edge, addedge);
-      if(addedge) 
+      if(addedge || MRST_cost >= last_MRST_cost) {
         plot(fplt, fout, (char)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
+        break;
+      } else last_MRST_cost = MRST_cost;
     }
     //fprintf(stderr, "iter = %d MRST_cost = %lld\n", i, MRST_cost);
     if(!i) orig_MST_cost = MST_cost;
@@ -321,7 +341,7 @@ int main(int argc, char** argv) {
   }
   fclose(fout);
   //fprintf(stderr, "MST_cost = %lld\n", orig_MST_cost);
-  //fprintf(stderr, "MRST_cost = %lld\n", MRST_cost);
+  //fprintf(stderr, "MRST_cost = %lld\n", last_MRST_cost);
   //fprintf(stderr, "improvement = %.6f\n", 
-  //        double(orig_MST_cost - MRST_cost) / orig_MST_cost);
+  //        double(orig_MST_cost - last_MRST_cost) / orig_MST_cost);
 }

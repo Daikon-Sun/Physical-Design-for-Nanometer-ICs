@@ -16,7 +16,8 @@
   (3) a binary program "steiner_tree" will be generated.
   compiler flag: g++ -std=c++11 -O3 -fopenmp
 8. How to Run:
-  ./<executable file> <input_file> <output_file> [output_graph]
-  The fourth argument "[output_graph]" is optional. If provided, then a gnuplot
-  file named "output_graph{i}" will be generated in order to visualize the final 
-  result of steiner-tree where the {i} implies the plot after {i}-th iterations.
+  ./<executable file> <input_file> <output_file> [output_graph_filename]
+  The fourth argument "[output_graph_filename]" is optional. If provided, then a 
+  gnuplot file named "output_graph_filename{i}" will be generated in order to 
+  visualize the final result of steiner-tree where the {i} implies the plot after 
+  {i}-th iterations.
