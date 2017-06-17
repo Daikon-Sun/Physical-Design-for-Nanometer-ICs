@@ -8,7 +8,7 @@
 ## Contents:
 - hw1 : **Fiduccia-Mattheyses heuristic** for solving 2-way, balanced partitioning.  
 
-- hw2 : **B*-Tree with Fast-SA** for solving fixed-outline floorplan problem.
+- hw2 : **B\*-Tree with Fast-SA** for solving fixed-outline floorplan problem.
 
 - hw3 : **Abacus-based Legalizer** for solving single-cell height legalization
 
