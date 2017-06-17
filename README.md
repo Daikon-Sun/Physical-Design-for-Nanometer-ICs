@@ -15,7 +15,6 @@
 
   ref : B*-Trees: A New Representation for Non-Slicing Floorplans
 [link](http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=855354)
-
         Modern Floorplanning Based on Fast Simulated Annealing
 [link](http://cc.ee.ntu.edu.tw/~ywchang/Papers/ispd05-floorplanning.pdf)
 
