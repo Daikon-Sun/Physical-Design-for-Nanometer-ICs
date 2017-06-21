@@ -1,2 +1,5 @@
-hw3/benchmarks/* linguist-vendored
+hw1/input_pa1/* linguist-vendored
+hw2/input_pa2/* linguist-vendored
 hw2/gnuplot-iostream/* linguist-vendored
+hw3/benchmarks/* linguist-vendored
+hw4/arearouting/* linguist-vendored
