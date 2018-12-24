@@ -1,4 +1,9 @@
+![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/HW2/report/example.png)
+*Generated result of case "ami33"*
+
 # B\*-Tree with Fast-SA for Solving Fixed-Outline Floorplan Problem
+- [B\*-Trees: A New Representation for Non-Slicing Floorplans](http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=855354)
+- [Modern Floorplanning Based on Fast Simulated Annealing](http://cc.ee.ntu.edu.tw/~ywchang/Papers/ispd05-floorplanning.pdf)
 
 ## Requirements
 - g++

@@ -1,4 +1,8 @@
-## HW4: Steiner-Tree Construction
+![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/HW4/report/example.png)
+*Generated result for case "case3"*
+
+# HW4: Steiner-Tree Construction
+- [Efficient Steiner Tree Construction Based on Spanning Graphs](http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=1291582)
 
 ## Requirements
 - g++ (better >= 5.2 and with OpenMP for multithread)

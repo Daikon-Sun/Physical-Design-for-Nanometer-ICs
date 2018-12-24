@@ -1,4 +1,9 @@
+![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/HW3/report/example.png)
+*Generated result for case "ibm01"*
+
 # Abacus-Based Legalizer for Solving Single-Cell Height Legalization
+- [Abacus: Fast legalization of standard cell circuits with minimal movement](http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5642689)
+-  [Fast Legalization for Standard Cell Placement with Simultaneous Wirelength and Displacement Minimization](http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5642689)
 
 ## Requirements
 - g++ (better >= 5.2)

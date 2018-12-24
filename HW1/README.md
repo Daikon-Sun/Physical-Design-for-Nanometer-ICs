@@ -1,4 +1,5 @@
 # Fiduccia-Mattheyses heuristic for Solving 2-Way, Balanced Partitioning.  
+- [Design and Implementation of Move-Based Heuristics for VLSI Hypergraph Partitioning](http://web.eecs.umich.edu/~imarkov/pubs/jour/j004.pdf)
 
 ## Requirements
 - g++ (better >= 5.2)
