@@ -1,4 +1,5 @@
-![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/HW3/report/example.png)
+![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/raw/master/HW3/report/example.png)
+
 *Generated result for case "ibm01"*
 
 # Abacus-Based Legalizer for Solving Single-Cell Height Legalization

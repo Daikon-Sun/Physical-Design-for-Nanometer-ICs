@@ -1,4 +1,5 @@
-![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/HW4/report/example.png)
+![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/raw/master/HW4/report/example.png)
+
 *Generated result for case "case3"*
 
 # HW4: Steiner-Tree Construction
