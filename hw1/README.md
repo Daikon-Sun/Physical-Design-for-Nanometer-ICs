@@ -1,15 +1,17 @@
 ## **Fiduccia-Mattheyses heuristic** for solving 2-way, balanced partitioning.  
 
 ## Requirements
-- gcc/g++ >= 5.2
+- g++ >= 5.2
+
+## Specification
+`spec/prog1_partitioning.pdf`
 
 ## File Descriptions
-- orig_fm.cpp: Original alrogithm of F-M Heuristic.
+- Makefile: A gnu makefile which take cares of compiling those cpp files.
+- orig_fm.cpp: Original algorithm of F-M Heuristic.
 - nonzero_fm.cpp: Nonzero version of F-M Heuristic.
 - multi_orig_fm.cpp: Run multiple iterations of original algorithm.
 - multi_nonzero_fm.cpp: Run multiple iterations of nonzero version.
-- Report.pdf: Report in the format pdf in case of incompatible typesetting.
-- Makefile: A gnu makefile which take cares of compiling those cpp files.
 
 ## Compilation
 - type "make" to make all four cpp files.
@@ -17,8 +19,15 @@
   - flag for gcc/g++ version < 5.2: g++ -std=c++1y -O3
 
 ## Usage
-  ```
-  ./\<executable_file\> [input_file] [output_file]
-  ```
-  where executable_file is one of `orig_fm`, `nonzero_fm`, `multi_orig_fm`, and `multi_nonzero_fm`.
-  For best performance within an hour, run `multi_nonzero_fm`.
+To generate a result, type
+```
+./Executable_file [Input_file] [Output_file]
+```
+- Executable_file: One of `orig_fm`, `nonzero_fm`, `multi_orig_fm`, and `multi_nonzero_fm`.
+- Input_file: One of the file in directory `input_pa1`.
+- Output_file: Output path.
+
+To check a generated result, see directory `checker`.
+
+## Additional Informations
+- For best performance within an hour, run `multi_nonzero_fm`.
