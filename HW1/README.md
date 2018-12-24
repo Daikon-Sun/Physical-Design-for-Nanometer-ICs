@@ -1,7 +1,7 @@
 # Fiduccia-Mattheyses heuristic for Solving 2-Way, Balanced Partitioning.  
 
 ## Requirements
-- g++ >= 5.2 (better)
+- g++ (better >= 5.2)
 
 ## Specification
 `spec/prog1_partitioning.pdf`

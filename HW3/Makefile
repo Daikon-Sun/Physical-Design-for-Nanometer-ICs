@@ -1,2 +1,2 @@
 all:
-	cd src; cmake .; make -j; mv legalizer ../; cd ..;
+	cd src; cmake .; make; mv legalizer ../; cd ..;

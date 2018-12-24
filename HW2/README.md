@@ -36,4 +36,12 @@ To check the correctness of a generated result, type
 ```
 python3 checker.py case_id output_file
 ```
-For example, after executing `./main 0.5 input_pa2/1.block input_pa2/1.net output.rpt`, you can type `python3 checker.py 1 output.rpt` to check.
+For example, after executing
+```
+./main 0.5 input_pa2/1.block input_pa2/1.nets output.rpt
+```
+you can type
+```
+python3 checker.py 1 output.rpt
+```
+to check.
