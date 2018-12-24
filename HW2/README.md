@@ -20,7 +20,7 @@
 
 ---
 
-To use iostream-gnuplot: Boost(c++) is required.
+To use iostream-gnuplot: gnuplot and Boost(c++) is required.
 
 ## Usage
 To generate a result, type
@@ -28,4 +28,12 @@ To generate a result, type
 ./main <Alpha> <Input_block> <Input_nets> <Output_rpt_file> [--plot]
 ```
 - Descriptions of arguments can be found in `spec/prog2_floorplanning.pdf`.
-- With `--plot`, the program will visualize every step of simulated annealing and final B\*-Tree.
+- With `--plot`, the program will visualize some steps of simulated annealing and final B\*-Tree.
+
+--- 
+
+To check the correctness of a generated result, type
+```
+python3 checker.py case_id output_file
+```
+For example, after executing `./main 0.5 input_pa2/1.block input_pa2/1.net output.rpt`, you can type `python3 checker.py 1 output.rpt` to check.

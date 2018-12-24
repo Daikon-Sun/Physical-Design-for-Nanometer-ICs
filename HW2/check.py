@@ -99,7 +99,7 @@ for j, net in enumerate(nets):
 
 area = max_x*max_y
 
-print("#"*90)
+print("#"*70)
 print("           input: {}".format(sys.argv[1]))
 print("   num of blocks: {}".format(len(blocks)))
 print("num of terminals: {}".format(len(terminals)))
@@ -115,4 +115,4 @@ print("           LEGAL" if good else
       "         ILLEGAL")
 print("    OUT OF BOUND" if (max_x>width or max_y>height) else
       "        IN BOUND")
-print("#"*90)
+print("#"*70)
