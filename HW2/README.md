@@ -28,4 +28,4 @@ To generate a result, type
 ./main <Alpha> <Input_block> <Input_nets> <Output_rpt_file> [--plot]
 ```
 - Descriptions of arguments can be found in `spec/prog2_floorplanning.pdf`.
-- With `--plot`, the program will visualize B\*-Tree at every step of simulated annealing.
+- With `--plot`, the program will visualize every step of simulated annealing and final B\*-Tree.
