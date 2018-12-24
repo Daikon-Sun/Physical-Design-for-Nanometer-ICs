@@ -127,7 +127,6 @@ inline void random_split() {
       cell_list[i].change_set();
     }
   } else if(iter > 1 && iter < 8) {
-    cerr << "here" << endl;
     vector< pair<double, int> > cell_size;
     for(int i = (int)cell_list.size()-1; i>=0; --i) {
       if(cell_list[i].empty()) continue;

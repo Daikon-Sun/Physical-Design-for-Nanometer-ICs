@@ -326,6 +326,6 @@ void my_main(int argc, char** argv) {
 }
 int main(int argc, char** argv) {
   ios_base::sync_with_stdio(false);
-  srand(atoi(argv[5]));
+  srand(time(NULL));
   my_main(argc, argv);
 }

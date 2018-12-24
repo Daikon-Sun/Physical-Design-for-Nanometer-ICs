@@ -1,7 +1,7 @@
-# **Fiduccia-Mattheyses heuristic** for solving 2-way, balanced partitioning.  
+# Fiduccia-Mattheyses heuristic for Solving 2-Way, Balanced Partitioning.  
 
 ## Requirements
-- g++ >= 5.2
+- g++ >= 5.2 (better)
 
 ## Specification
 `spec/prog1_partitioning.pdf`
@@ -21,15 +21,17 @@
 ## Usage
 To generate a result, type
 ```
-./Executable_file [Input_file] [Output_file]
+./<Executable_file> <Input_file> <Output_file>
 ```
 - Executable_file: One of `orig_fm`, `nonzero_fm`, `multi_orig_fm`, and `multi_nonzero_fm`.
 - Input_file: One of the files in directory `input_pa1`.
 - Output_file: Output path.
 
----------
+---
 
-To check a generated result, see directory `checker`.
+To check the correctness of a generated result, see directory `checker`.
 
 ## Additional Informations
 - For best performance within an hour, run `multi_nonzero_fm`.
+- Both `multi_orig_fm` and `multi_nonzero_fm` will search for better solutions
+  within about 3000 seconds (because the time limitation in original specification). If it is too long, change the value of `total_sec` in the corresponding file.
