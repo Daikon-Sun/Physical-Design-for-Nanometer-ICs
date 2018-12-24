@@ -1,4 +1,4 @@
-## **Fiduccia-Mattheyses heuristic** for solving 2-way, balanced partitioning.  
+# **Fiduccia-Mattheyses heuristic** for solving 2-way, balanced partitioning.  
 
 ## Requirements
 - g++ >= 5.2
@@ -24,8 +24,10 @@ To generate a result, type
 ./Executable_file [Input_file] [Output_file]
 ```
 - Executable_file: One of `orig_fm`, `nonzero_fm`, `multi_orig_fm`, and `multi_nonzero_fm`.
-- Input_file: One of the file in directory `input_pa1`.
+- Input_file: One of the files in directory `input_pa1`.
 - Output_file: Output path.
+
+---------
 
 To check a generated result, see directory `checker`.
 
