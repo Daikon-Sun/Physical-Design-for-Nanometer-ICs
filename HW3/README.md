@@ -7,9 +7,9 @@
 `spec/prog3_legalization.pdf`
 
 ## File Descriptions
-- src/\*: All c/c++ source files.
-- legalizer: The compiled binary program.
-- Makefile: A Makefile to generate an executable binary
+- `src/\*`: All c/c++ source files.
+- `legalizer`: The compiled binary program.
+- `Makefile`: A Makefile to generate an executable binary
 
 ## Compilation
 1. Type `make` in the current directory.
@@ -18,10 +18,8 @@
 ## Usage
 To generate a result, type
 ```
-./legalizer -aux <input.aux> [--plot] [--check]
+./legalizer -aux <input>.aux [--plot] [--check]
 ```
-- `--plot` will output a gnuplot `input.plt` for visualization.
+- `--plot` will output a gnuplot `<input>.plt` for visualization.
 - `--check` will check whether the solution is legal or not.
-
-## Additional Informations
-- After running, an output file named `input.pl` will be saved in the current directory.
+- After running, an output file named `<input>.pl` will be saved in the current directory.

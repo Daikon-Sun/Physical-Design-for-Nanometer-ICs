@@ -312,36 +312,33 @@ int main(int argc, char** argv) {
       new_edge.reserve(nPins);
       tie(MST_cost, MRST_cost) = 
         steiner_tree<int>(Xs, Ys, X_pls_Y, X_mns_Y, Tedge, new_edge, addedge);
-      if(addedge || MRST_cost >= last_MRST_cost) {
-        plot(fplt, fout, (int)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
-        break;
-      } else last_MRST_cost = MRST_cost;
+      plot(fplt, fout, (int)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
+      if(addedge || MRST_cost >= last_MRST_cost) break;
+      else last_MRST_cost = MRST_cost;
     } else if(use_short) {
       vector<pair<short, short>> new_edge, Tedge;
       new_edge.reserve(nPins);
       tie(MST_cost, MRST_cost) =
         steiner_tree<short>(Xs, Ys, X_pls_Y, X_mns_Y, Tedge, new_edge, addedge);
-      if(addedge || MRST_cost >= last_MRST_cost) {
-        plot(fplt, fout, (short)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
-        break;
-      } else last_MRST_cost = MRST_cost;
+      plot(fplt, fout, (short)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
+      if(addedge || MRST_cost >= last_MRST_cost) break;
+      else last_MRST_cost = MRST_cost;
     } else {
       vector<pair<char, char>> new_edge, Tedge;
       new_edge.reserve(nPins);
       tie(MST_cost, MRST_cost) =
         steiner_tree<char>(Xs, Ys, X_pls_Y, X_mns_Y, Tedge, new_edge, addedge);
-      if(addedge || MRST_cost >= last_MRST_cost) {
-        plot(fplt, fout, (char)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
-        break;
-      } else last_MRST_cost = MRST_cost;
+      plot(fplt, fout, (char)nPins, MRST_cost, Xs, Ys, Tedge, new_edge);
+      if(addedge || MRST_cost >= last_MRST_cost) break;
+      else last_MRST_cost = MRST_cost;
     }
-    //fprintf(stderr, "iter = %d MRST_cost = %lld\n", i, MRST_cost);
+    fprintf(stderr, "iter = %d MRST_cost = %lld\n", i, MRST_cost);
     if(!i) orig_MST_cost = MST_cost;
     if(fplt) fclose(fplt);
   }
   fclose(fout);
-  //fprintf(stderr, "MST_cost = %lld\n", orig_MST_cost);
-  //fprintf(stderr, "MRST_cost = %lld\n", last_MRST_cost);
-  //fprintf(stderr, "improvement = %.6f\n", 
-  //        double(orig_MST_cost - last_MRST_cost) / orig_MST_cost);
+  fprintf(stderr, "MST_cost = %lld\n", orig_MST_cost);
+  fprintf(stderr, "MRST_cost = %lld\n", last_MRST_cost);
+  fprintf(stderr, "improvement = %.6f\n", 
+          double(orig_MST_cost - last_MRST_cost) / orig_MST_cost);
 }

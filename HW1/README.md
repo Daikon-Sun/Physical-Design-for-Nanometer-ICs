@@ -7,16 +7,16 @@
 `spec/prog1_partitioning.pdf`
 
 ## File Descriptions
-- Makefile: A gnu makefile which take cares of compiling those cpp files.
-- orig_fm.cpp: Original algorithm of F-M Heuristic.
-- nonzero_fm.cpp: Nonzero version of F-M Heuristic.
-- multi_orig_fm.cpp: Run multiple iterations of original algorithm.
-- multi_nonzero_fm.cpp: Run multiple iterations of nonzero version.
+- `Makefile`: A gnu makefile which take cares of compiling those cpp files.
+- `orig_fm.cpp`: Original algorithm of F-M Heuristic.
+- `nonzero_fm.cpp`: Nonzero version of F-M Heuristic.
+- `multi_orig_fm.cpp`: Run multiple iterations of original algorithm.
+- `multi_nonzero_fm.cpp`: Run multiple iterations of nonzero version.
 
 ## Compilation
 - type "make" to make all four cpp files.
-  - flag for gcc/g++ version >= 5.2: g++ -std=c++14 -O3
-  - flag for gcc/g++ version < 5.2: g++ -std=c++1y -O3
+  - flag for gcc/g++ version >= 5.2: `g++ -std=c++14 -O3`
+  - flag for gcc/g++ version < 5.2: `g++ -std=c++1y -O3`
 
 ## Usage
 To generate a result, type
