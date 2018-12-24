@@ -1,4 +1,4 @@
-![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/HW2/report/example.png)
+![img](https://github.com/Daikon-Sun/Physical-Design-for-Nanometer-ICs-Spring-2017/raw/master/HW2/report/example.png)
 *Generated result of case "ami33"*
 
 # B\*-Tree with Fast-SA for Solving Fixed-Outline Floorplan Problem
